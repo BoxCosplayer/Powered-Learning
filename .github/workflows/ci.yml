@@ -1,0 +1,46 @@
+# Purpose: Execute linting and coverage-enforced tests for every push/PR.
+# Inputs: GitHub push/pull_request events triggering the workflow with a Python 3.11 environment.
+# Outputs: Ruff lint results plus `coverage run -m pytest` and `coverage report --fail-under=100` status checks.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/ruff-action@v1
+        with:
+          args: check .
+
+      - uses: astral-sh/ruff-action@v1
+        with:
+          args: format --check .
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest coverage
+          pip install -e .
+
+      - name: Run pytest with coverage (require 100%)
+        run: |
+          coverage run -m pytest --no-summary
+          coverage report --fail-under=100
