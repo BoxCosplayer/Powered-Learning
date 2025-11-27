@@ -30,6 +30,8 @@
 
 - Add Laravel tests under `frontend/tests` (Feature for endpoints, Unit for narrow helpers) and run them with `composer test` or `php artisan test`, keeping fixtures ephemeral so the shared SQLite database stays deterministic.
 
+- For `.blade.php` files, dont include the excerpt at the start with file purpose... etc.
+
 ## Extra Notes
 
 - All spellings should be in british english
