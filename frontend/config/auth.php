@@ -94,7 +94,7 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
+            'expire' => 30,
             'throttle' => 60,
         ],
     ],
@@ -108,8 +108,12 @@ return [
     | window expires and users are asked to re-enter their password via the
     | confirmation screen. By default, the timeout lasts for three hours.
     |
+    | My implementation timeout lasts for one hour.
+    |
     */
 
-    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+    // 'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+
+    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 3600),
 
 ];
