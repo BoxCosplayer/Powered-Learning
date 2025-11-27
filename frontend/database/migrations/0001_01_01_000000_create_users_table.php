@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * Migration establishing the users, password reset tokens, and sessions tables with UUID user identifiers.
+ *
+ * Inputs: none; executed by Laravel's migration runner.
+ * Outputs: creates relational tables configured for UUID primary keys and matching foreign key constraints.
+ */
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -8,11 +15,14 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * Inputs: none; invoked by Artisan migrate.
+     * Outputs: void; persists the users, password_reset_tokens, and sessions tables.
      */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -29,7 +39,12 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            $table->foreignUuid('user_id')
+                ->nullable()
+                ->index()
+                ->constrained('users', 'id')
+                ->nullOnDelete()
+                ->cascadeOnUpdate();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -39,6 +54,9 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
+     *
+     * Inputs: none; invoked by migration rollback.
+     * Outputs: void; removes the created tables.
      */
     public function down(): void
     {
