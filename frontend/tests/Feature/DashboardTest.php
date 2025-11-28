@@ -49,4 +49,39 @@ class DashboardTest extends TestCase
         $response->assertSeeText('Powered Learning Dashboard');
         $response->assertSeeText($user->name);
     }
+
+    /**
+     * Authenticated users can access the profile page directly from the dashboard.
+     *
+     * Inputs: GET request to /dashboard while authenticated.
+     * Outputs: successful response containing a link to the profile route.
+     */
+    public function test_dashboard_contains_link_to_profile_page(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertSee('View profile');
+        $response->assertSee('/profile');
+    }
+
+    /**
+     * Authenticated users can see the config selection form populated from the Python configuration.
+     *
+     * Inputs: GET request to /dashboard while authenticated.
+     * Outputs: successful response containing config.py grouping labels and option keys.
+     */
+    public function test_dashboard_shows_config_options_from_python_module(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get('/dashboard');
+
+        $response->assertOk();
+        $response->assertSeeText('Select config-driven values');
+        $response->assertSeeText('Assessment weighting');
+        $response->assertSee('REVISION_WEIGHT');
+    }
 }

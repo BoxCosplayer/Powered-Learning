@@ -22,6 +22,12 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <a
+                        href="{{ route('profile') }}"
+                        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md hover:shadow-slate-200 focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]"
+                    >
+                        View profile
+                    </a>
+                    <a
                         href="{{ route('home') }}"
                         class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md hover:shadow-slate-200 focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]"
                     >
@@ -39,27 +45,94 @@
                 </div>
             </header>
             <section class="relative mt-10 grid flex-1 gap-8 md:grid-cols-[1.1fr_0.9fr]">
-                <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
-                    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#ffb347] opacity-10 blur-2xl"></div>
-                    <div class="absolute -left-14 -bottom-14 h-48 w-48 rounded-full bg-[#2d8f6f] opacity-10 blur-2xl"></div>
-                    <div class="relative space-y-4">
-                        <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Your profile</p>
-                        <h2 class="text-2xl font-semibold text-slate-900">Hello, {{ $user->name }}</h2>
-                        <p class="text-sm leading-relaxed text-slate-700">
-                            You are signed in and ready to continue your Powered Learning journey. Use the links here to jump back to the homepage or sign out securely.
-                        </p>
-                        <div class="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 md:grid-cols-2">
-                            <div class="space-y-1">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Account</p>
-                                <p class="text-base font-semibold text-slate-900">{{ $user->email }}</p>
+                <div class="space-y-6">
+                    <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
+                        <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#ffb347] opacity-10 blur-2xl"></div>
+                        <div class="absolute -left-14 -bottom-14 h-48 w-48 rounded-full bg-[#2d8f6f] opacity-10 blur-2xl"></div>
+                        <div class="relative space-y-4">
+                            <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Your profile</p>
+                            <h2 class="text-2xl font-semibold text-slate-900">Hello, {{ $user->name }}</h2>
+                            <p class="text-sm leading-relaxed text-slate-700">
+                                You are signed in and ready to continue your Powered Learning journey. Use the links here to jump back to the homepage or sign out securely.
+                            </p>
+                            <div class="grid gap-4 rounded-2xl border border-slate-100 bg-slate-50/60 p-4 md:grid-cols-2">
+                                <div class="space-y-1">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Account</p>
+                                    <p class="text-base font-semibold text-slate-900">{{ $user->email }}</p>
+                                </div>
+                                <div class="space-y-1">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Status</p>
+                                    <p class="inline-flex items-center gap-2 rounded-full bg-[#e7f7ef] px-3 py-1 text-sm font-semibold text-[#2d8f6f]">
+                                        <span class="h-2.5 w-2.5 rounded-full bg-[#2d8f6f]"></span>
+                                        Authenticated
+                                    </p>
+                                </div>
                             </div>
-                            <div class="space-y-1">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Status</p>
-                                <p class="inline-flex items-center gap-2 rounded-full bg-[#e7f7ef] px-3 py-1 text-sm font-semibold text-[#2d8f6f]">
-                                    <span class="h-2.5 w-2.5 rounded-full bg-[#2d8f6f]"></span>
-                                    Authenticated
-                                </p>
+                        </div>
+                    </div>
+                    <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
+                        <div class="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#2d8f6f] opacity-10 blur-2xl"></div>
+                        <div class="absolute -right-16 bottom-10 h-44 w-44 rounded-full bg-[#ffb347] opacity-20 blur-3xl"></div>
+                        <div class="relative space-y-6">
+                            <div class="flex flex-wrap items-center justify-between gap-4">
+                                <div class="space-y-1">
+                                    <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Algorithm inputs</p>
+                                    <h2 class="text-2xl font-semibold text-slate-900">Select config-driven values</h2>
+                                    <p class="text-sm leading-relaxed text-slate-700">
+                                        Tune the recommender using the same options defined in the Python <span class="font-semibold text-[#2d8f6f]">config.py</span> file so your selections stay aligned with the underlying logic.
+                                    </p>
+                                </div>
+                                <span class="inline-flex items-center rounded-full bg-[#e7f7ef] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">config.py</span>
                             </div>
+                            @if(empty($configOptions))
+                                <div class="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-4 text-sm text-slate-700">
+                                    The configuration file could not be read. Check that <code class="text-[#2d8f6f]">src/subject_recommender/config.py</code> is present so you can select values.
+                                </div>
+                            @else
+                                <form method="GET" action="{{ route('dashboard') }}" class="space-y-5">
+                                    @foreach($configOptions as $group => $options)
+                                        <fieldset class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                                            <legend class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">{{ $group }}</legend>
+                                            <div class="mt-3 grid gap-4 md:grid-cols-2">
+                                                @foreach($options as $option)
+                                                    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-800">
+                                                        <span class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-600">
+                                                            <span>{{ ucwords(strtolower(str_replace('_', ' ', $option['key']))) }}</span>
+                                                            <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#2d8f6f]">{{ $option['key'] }}</span>
+                                                        </span>
+                                                        @if($option['type'] === 'number')
+                                                            <input
+                                                                type="number"
+                                                                name="{{ $option['key'] }}"
+                                                                value="{{ $option['value'] }}"
+                                                                step="any"
+                                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
+                                                            />
+                                                        @else
+                                                            <input
+                                                                type="text"
+                                                                name="{{ $option['key'] }}"
+                                                                value="{{ $option['value'] }}"
+                                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
+                                                            />
+                                                        @endif
+                                                        <span class="text-xs font-normal text-slate-600">Current value: {{ $option['value'] }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </fieldset>
+                                    @endforeach
+                                    <div class="flex flex-wrap items-center justify-between gap-3">
+                                        <p class="text-xs text-slate-600">Selections stay on this page so you can experiment safely before committing to a personalised session.</p>
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2d8f6f] via-[#2fa18e] to-[#ffb347] px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2d8f6f33] transition hover:-translate-y-[1px] hover:shadow-[#2d8f6f4d] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]"
+                                        >
+                                            Review selection
+                                        </button>
+                                    </div>
+                                </form>
+                            @endif
                         </div>
                     </div>
                 </div>

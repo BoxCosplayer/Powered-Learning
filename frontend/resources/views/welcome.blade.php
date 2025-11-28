@@ -14,7 +14,7 @@
             <div class="absolute -right-16 bottom-16 h-64 w-64 rounded-full bg-[#b1f1d0] blur-3xl opacity-35"></div>
         </div>
         <div class="relative flex min-h-screen items-center justify-center px-6 py-12">
-            <div class="max-w-3xl w-full rounded-3xl bg-white/80 p-10 shadow-[0_25px_70px_-35px_rgba(15,23,42,0.35)] ring-1 ring-white/60 backdrop-blur">
+            <div class="max-w-3xl w-full rounded-3xl bg-white/80 p-10">
                 <div class="flex flex-col gap-6 text-center">
                     <h1 class="text-3xl font-semibold text-slate-900 sm:text-4xl">
                         {{ config('app.name', 'Powered Learning') }}
@@ -26,19 +26,16 @@
                         <div class="flex flex-wrap justify-center gap-3">
                             <a
                                 href="{{ route('dashboard') }}"
-                                class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-md shadow-slate-200 transition hover:-translate-y-px hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1f6f8b]"
+                                class="items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-md shadow-slate-200 transition hover:-translate-y-px hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1f6f8b]"
                             >
                                 Go to dashboard
                             </a>
-                            <form method="POST" action="{{ route('logout') }}" class="inline-flex">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-[#0f3e6e] shadow-md shadow-[#0f3e6e1a] ring-1 ring-[#0f3e6e1a] transition hover:-translate-y-px hover:shadow-[#0f3e6e33] focus:outline-none focus:ring-2 focus:ring-[#1f6f8b]"
-                                >
-                                    Log out
-                                </button>
-                            </form>
+                            <a
+                                href="{{ route('logout') }}"
+                                class="items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-md shadow-slate-200 transition hover:-translate-y-px hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1f6f8b]"
+                            >
+                                Logout
+                            </a>
                         </div>
                     @endauth
                     @guest
@@ -48,7 +45,7 @@
                         <div class="flex justify-center">
                             <a
                                 href="{{ route('login') }}"
-                                class="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-[#0f3e6e] via-[#1f6f8b] to-[#3eb489] px-6 py-3 text-sm font-semibold uppercase tracking-wide text-white shadow-lg shadow-[#0f3e6e33] transition hover:translate-y-[-1px] hover:shadow-[#0f3e6e4d] active:translate-y-[0px]"
+                                class="items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-wide text-slate-900 shadow-md shadow-slate-200 transition hover:-translate-y-px hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#1f6f8b]"
                             >
                                 Go to login
                             </a>
