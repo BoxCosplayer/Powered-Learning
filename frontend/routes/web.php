@@ -10,6 +10,8 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HistoryEntryController;
+use App\Http\Controllers\PredictedGradeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
@@ -25,7 +27,15 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
     Route::get('/profile', ProfileController::class)->name('profile');
+
+    Route::post('/profile/predicted-grades', [PredictedGradeController::class, 'store'])
+        ->name('profile.predicted-grades.store');
+
+    Route::post('/profile/history', [HistoryEntryController::class, 'store'])                   ->name('profile.history.store');
+    Route::put('/profile/history/{historyEntry}', [HistoryEntryController::class, 'update'])    ->name('profile.history.update');
+    Route::delete('/profile/history/{historyEntry}', [HistoryEntryController::class, 'destroy'])->name('profile.history.destroy');
 });
 
 Route::match(['get', 'post'], '/logout', [LoginController::class, 'destroy'])->name('logout');

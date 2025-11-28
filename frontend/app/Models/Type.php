@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Type extends Model
 {
-
     /**
      * Table configuration for the types dataset.
      *

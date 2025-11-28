@@ -32,9 +32,25 @@ class HistoryEntryFactory extends Factory
             'historyEntryID' => Str::uuid()->toString(),
             'userID' => User::factory(),
             'subjectID' => Subject::factory(),
-            'typeID' => Type::factory(),
+            'typeID' => function (array $attributes) {
+                if (isset($attributes['typeID'])) {
+                    return $attributes['typeID'];
+                }
+
+                $existingTypeId = Type::query()->inRandomOrder()->value('uuid');
+
+                if ($existingTypeId !== null) {
+                    return $existingTypeId;
+                }
+
+                return Type::create([
+                    'uuid' => Str::uuid()->toString(),
+                    'type' => 'Exam',
+                    'weight' => 1.0,
+                ])->uuid;
+            },
             'score' => fake()->randomFloat(2, 0, 100),
-            'studied_at' => fake()->dateTimeBetween('-1 year', 'now'),
+            'studied_at' => fake()->date('Y-m-d'),
         ];
     }
 }

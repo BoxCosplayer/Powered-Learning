@@ -3,7 +3,7 @@
 /**
  * HistoryEntry model recording study events against subjects and types for users.
  *
- * Inputs: hydrated database rows from the history table (historyEntryID:string, userID:int, subjectID:string, typeID:string, score:float, studied_at:datetime).
+ * Inputs: hydrated database rows from the history table (historyEntryID:string, userID:int, subjectID:string, typeID:string, score:float, studied_at:date).
  * Outputs: exposes persistence, relationships, and casting for history records.
  */
 
@@ -100,7 +100,7 @@ class HistoryEntry extends Model
      */
     protected $casts = [
         'score' => 'float',
-        'studied_at' => 'datetime',
+        'studied_at' => 'date',
     ];
 
     /**

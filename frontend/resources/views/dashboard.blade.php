@@ -33,15 +33,12 @@
                     >
                         Go to homepage
                     </a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button
-                            type="submit"
-                            class="rounded-xl bg-gradient-to-r from-[#2d8f6f] via-[#2fa18e] to-[#ffb347] px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2d8f6f33] transition hover:-translate-y-[1px] hover:shadow-[#2d8f6f4d] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]"
-                        >
-                            Log out
-                        </button>
-                    </form>
+                    <a
+                        href="{{ route('logout') }}"
+                        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:-translate-y-[1px] hover:shadow-md hover:shadow-slate-200 focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]"
+                    >
+                        Logout
+                    </a>
                 </div>
             </header>
             <section class="relative mt-10 grid flex-1 gap-8 md:grid-cols-[1.1fr_0.9fr]">
@@ -77,99 +74,34 @@
                             <div class="flex flex-wrap items-center justify-between gap-4">
                                 <div class="space-y-1">
                                     <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Algorithm inputs</p>
-                                    <h2 class="text-2xl font-semibold text-slate-900">Select config-driven values</h2>
+                                    <h2 class="text-2xl font-semibold text-slate-900">Customise session tuning</h2>
                                     <p class="text-sm leading-relaxed text-slate-700">
-                                        Tune the recommender using the same options defined in the Python <span class="font-semibold text-[#2d8f6f]">config.py</span> file so your selections stay aligned with the underlying logic.
+                                        Set the timing and cadence the recommender should follow before you start a personalised run.
                                     </p>
                                 </div>
-                                <span class="inline-flex items-center rounded-full bg-[#e7f7ef] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">config.py</span>
+                                <span class="inline-flex items-center rounded-full bg-[#e7f7ef] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Manual entry</span>
                             </div>
-                            @if(empty($configOptions))
-                                <div class="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-4 text-sm text-slate-700">
-                                    The configuration file could not be read. Check that <code class="text-[#2d8f6f]">src/subject_recommender/config.py</code> is present so you can select values.
-                                </div>
-                            @else
-                                <form method="GET" action="{{ route('dashboard') }}" class="space-y-5">
-                                    @foreach($configOptions as $group => $options)
-                                        <fieldset class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-                                            <legend class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">{{ $group }}</legend>
-                                            <div class="mt-3 grid gap-4 md:grid-cols-2">
-                                                @foreach($options as $option)
-                                                    <label class="flex flex-col gap-1 text-sm font-semibold text-slate-800">
-                                                        <span class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-600">
-                                                            <span>{{ ucwords(strtolower(str_replace('_', ' ', $option['key']))) }}</span>
-                                                            <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#2d8f6f]">{{ $option['key'] }}</span>
-                                                        </span>
-                                                        @if($option['type'] === 'number')
-                                                            <input
-                                                                type="number"
-                                                                name="{{ $option['key'] }}"
-                                                                value="{{ $option['value'] }}"
-                                                                step="any"
-                                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
-                                                            />
-                                                        @else
-                                                            <input
-                                                                type="text"
-                                                                name="{{ $option['key'] }}"
-                                                                value="{{ $option['value'] }}"
-                                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
-                                                            />
-                                                        @endif
-                                                        <span class="text-xs font-normal text-slate-600">Current value: {{ $option['value'] }}</span>
-                                                    </label>
-                                                @endforeach
-                                            </div>
-                                        </fieldset>
+                            <form method="GET" action="{{ route('dashboard') }}" class="space-y-5">
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    @foreach($tunableParameters as $parameter)
+                                        <label class="flex flex-col gap-1 text-sm font-semibold text-slate-800">
+                                            <span class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-600">
+                                                <span>{{ $parameter['label'] }}</span>
+                                                <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#2d8f6f]">{{ $parameter['key'] }}</span>
+                                            </span>
+                                            <input
+                                                type="{{ $parameter['type'] }}"
+                                                name="{{ $parameter['key'] }}"
+                                                value="{{ $parameter['value'] }}"
+                                                min="0"
+                                                step="1"
+                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
+                                            />
+                                            <span class="text-xs font-normal text-slate-600">{{ $parameter['helper'] }}</span>
+                                        </label>
                                     @endforeach
-                                    <div class="flex flex-wrap items-center justify-between gap-3">
-                                        <p class="text-xs text-slate-600">Selections stay on this page so you can experiment safely before committing to a personalised session.</p>
-                                        <button
-                                            type="submit"
-                                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2d8f6f] via-[#2fa18e] to-[#ffb347] px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2d8f6f33] transition hover:-translate-y-[1px] hover:shadow-[#2d8f6f4d] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]"
-                                        >
-                                            Review selection
-                                        </button>
-                                    </div>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                <div class="relative flex flex-col justify-between overflow-hidden rounded-3xl bg-[#0f172a] text-white shadow-xl shadow-slate-300/60">
-                    <div class="absolute -right-16 -top-10 h-56 w-56 rounded-full bg-white/10 blur-3xl"></div>
-                    <div class="absolute -left-10 bottom-0 h-44 w-44 rounded-full bg-[#2fa18e]/30 blur-3xl"></div>
-                    <div class="relative p-8 space-y-4">
-                        <p class="text-sm font-semibold uppercase tracking-wide text-[#c8f2e2]">Next steps</p>
-                        <h3 class="text-2xl font-semibold">Stay focused and explore</h3>
-                        <p class="text-sm leading-relaxed text-slate-200">
-                            Navigate back to the homepage to browse subjects, or sign out when you are finished. We keep your session secure so you can return without losing momentum.
-                        </p>
-                        <div class="mt-4 grid gap-3">
-                            <a
-                                href="{{ route('home') }}"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:-translate-y-[1px] focus:outline-none focus:ring-2 focus:ring-[#c8f2e2]"
-                            >
-                                Return to homepage
-                            </a>
-                            <form method="POST" action="{{ route('logout') }}" class="w-full">
-                                @csrf
-                                <button
-                                    type="submit"
-                                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/40 bg-transparent px-4 py-3 text-sm font-semibold text-white backdrop-blur transition hover:-translate-y-[1px] hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#c8f2e2]"
-                                >
-                                    Log out securely
-                                </button>
+                                </div>
                             </form>
-                        </div>
-                    </div>
-                    <div class="relative flex items-center gap-3 border-t border-white/10 bg-white/5 px-8 py-5 text-sm text-slate-100">
-                        <span class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-base font-semibold">
-                            PL
-                        </span>
-                        <div>
-                            <p class="font-semibold">Powered Learning</p>
-                            <p class="text-xs text-slate-200">Personalised pathways designed for you.</p>
                         </div>
                     </div>
                 </div>

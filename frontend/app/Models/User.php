@@ -12,6 +12,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -87,5 +88,27 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Predicted grades associated with the user.
+     *
+     * Inputs: none.
+     * Outputs: HasMany relation targeting the PredictedGrade model using userID as the foreign key.
+     */
+    public function predictedGrades(): HasMany
+    {
+        return $this->hasMany(PredictedGrade::class, 'userID');
+    }
+
+    /**
+     * History entries recorded by the user.
+     *
+     * Inputs: none.
+     * Outputs: HasMany relation targeting the HistoryEntry model keyed by userID.
+     */
+    public function historyEntries(): HasMany
+    {
+        return $this->hasMany(HistoryEntry::class, 'userID');
     }
 }
