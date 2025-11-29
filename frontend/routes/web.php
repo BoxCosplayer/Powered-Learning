@@ -13,6 +13,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistoryEntryController;
 use App\Http\Controllers\PredictedGradeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StudyController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,10 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+
+    Route::post('/study', [StudyController::class, 'start'])->name('study.start');
+    Route::get('/study', [StudyController::class, 'show'])->name('study.show');
+    Route::get('/study/status', [StudyController::class, 'status'])->name('study.status');
 
     Route::get('/profile', ProfileController::class)->name('profile');
 

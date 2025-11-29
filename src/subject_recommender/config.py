@@ -32,7 +32,7 @@ SESSION_COUNT = 8
 SHOTS = 8
 
 # DATABASE Defaults (overridable via CLI flags when invoking the tool)
-DATABASE_PATH = Path(__file__).resolve().parents[2] / "data" / "database.sqlite"
+DATABASE_PATH = "Q:\..docs\.Projects\Powered-Learning\\frontend\database\database.sqlite"
 DATABASE_USER_ID = "1"
 
 
@@ -44,5 +44,4 @@ def get_database_settings() -> dict[str, str | Path]:
         - path: Path object pointing to the SQLite database file.
         - user_id: str identifier of the active user, sourced from the environment when set.
     """
-
     return {"path": DATABASE_PATH, "user_id": DATABASE_USER_ID}

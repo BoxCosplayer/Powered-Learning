@@ -16,7 +16,7 @@
 
 - Keep exploratory scripts guarded with `if __name__ == "__main__":` and direct any generated artefacts to `output/`, creating the directory if needed so pytest collection stays read-only.
 
-- At the start of each file and function there should be a docstring detailing function/file purpose, inputs & input types and outputs & output types
+- At the start of each file and function there should be a docstring detailing function/file purpose, inputs & input types and outputs & output types, except for views
 
 ## Extra Notes
 

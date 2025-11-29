@@ -24,6 +24,7 @@ def _get_database_settings() -> tuple[Path, str]:
 
     settings = config.get_database_settings()
     database_path = Path(settings["path"])
+    
     user_id = str(settings["user_id"])
     return database_path, user_id
 
@@ -101,7 +102,7 @@ def _get_subject_map(connection: sqlite3.Connection, subject_names: Iterable[str
 def _assert_user_exists(connection: sqlite3.Connection, user_id: str) -> None:
     """Raise a ValueError when the configured user does not exist in the database."""
 
-    row = connection.execute("SELECT 1 FROM users WHERE uuid = ? LIMIT 1;", (user_id,)).fetchone()
+    row = connection.execute("SELECT 1 FROM users WHERE id = ? LIMIT 1;", (user_id,)).fetchone()
     if row is None:
         raise ValueError(f"User '{user_id}' does not exist in the database. Create the user before proceeding.")
 
