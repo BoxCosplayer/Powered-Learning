@@ -340,7 +340,7 @@ def test_persist_history_writes_entries(tmp_path: Path) -> None:
     connection.executescript(
         """
         PRAGMA foreign_keys = ON;
-        CREATE TABLE users (uuid TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
+        CREATE TABLE users (id TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
         CREATE TABLE subjects (uuid TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL);
         CREATE TABLE types (uuid TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, weight REAL NOT NULL);
         CREATE TABLE history (
@@ -353,7 +353,7 @@ def test_persist_history_writes_entries(tmp_path: Path) -> None:
         );
         """
     )
-    connection.execute("INSERT INTO users (uuid, username, role) VALUES ('user-a', 'tester', 'student');")
+    connection.execute("INSERT INTO users (id, username, role) VALUES ('user-a', 'tester', 'student');")
     connection.execute("INSERT INTO subjects (uuid, name) VALUES ('sub-1', 'Maths');")
     connection.execute("INSERT INTO types (uuid, type, weight) VALUES ('type-revision', 'Revision', 0.1);")
     connection.commit()

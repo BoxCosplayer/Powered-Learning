@@ -24,7 +24,7 @@ def _get_database_settings() -> tuple[Path, str]:
 
     settings = config.get_database_settings()
     database_path = Path(settings["path"])
-    
+
     user_id = str(settings["user_id"])
     return database_path, user_id
 

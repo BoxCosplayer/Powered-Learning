@@ -31,7 +31,7 @@ def _bootstrap_database(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, user_id
         """
         PRAGMA foreign_keys = ON;
         CREATE TABLE users (
-            uuid TEXT PRIMARY KEY NOT NULL,
+            id TEXT PRIMARY KEY NOT NULL,
             username TEXT NOT NULL,
             role TEXT NOT NULL
         );
@@ -49,7 +49,7 @@ def _bootstrap_database(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, user_id
             userID TEXT NOT NULL,
             subjectID TEXT NOT NULL,
             score REAL NOT NULL,
-            FOREIGN KEY (userID) REFERENCES users (uuid),
+            FOREIGN KEY (userID) REFERENCES users (id),
             FOREIGN KEY (subjectID) REFERENCES subjects (uuid)
         );
         CREATE TABLE history (
@@ -59,13 +59,13 @@ def _bootstrap_database(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, user_id
             typeID TEXT NOT NULL,
             score REAL NOT NULL,
             studied_at DATETIME NOT NULL,
-            FOREIGN KEY (userID) REFERENCES users (uuid),
+            FOREIGN KEY (userID) REFERENCES users (id),
             FOREIGN KEY (subjectID) REFERENCES subjects (uuid),
             FOREIGN KEY (typeID) REFERENCES types (uuid)
         );
         """
     )
-    connection.execute("INSERT INTO users (uuid, username, role) VALUES (?, ?, ?);", (user_id, "tester", "student"))
+    connection.execute("INSERT INTO users (id, username, role) VALUES (?, ?, ?);", (user_id, "tester", "student"))
     connection.execute("INSERT INTO types (uuid, type, weight) VALUES ('type-quiz', 'Quiz', 0.3);")
     connection.execute("INSERT INTO types (uuid, type, weight) VALUES ('type-exam', 'Exam', 0.6);")
     connection.commit()
@@ -244,11 +244,11 @@ def test_get_assessment_weights_falls_back_when_types_missing(monkeypatch: pytes
     connection = sqlite3.connect(db_path)
     connection.executescript(
         """
-        CREATE TABLE users (uuid TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
+        CREATE TABLE users (id TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
         CREATE TABLE types (uuid TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, weight REAL NOT NULL);
         """
     )
-    connection.execute("INSERT INTO users (uuid, username, role) VALUES ('user-1', 'tester', 'student');")
+    connection.execute("INSERT INTO users (id, username, role) VALUES ('user-1', 'tester', 'student');")
     connection.commit()
     connection.close()
 
@@ -301,7 +301,7 @@ def test_get_study_history_raises_when_user_missing(monkeypatch: pytest.MonkeyPa
     connection = sqlite3.connect(db_path)
     connection.executescript(
         """
-        CREATE TABLE users (uuid TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
+        CREATE TABLE users (id TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
         CREATE TABLE subjects (uuid TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL);
         CREATE TABLE types (uuid TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, weight REAL NOT NULL);
         CREATE TABLE history (

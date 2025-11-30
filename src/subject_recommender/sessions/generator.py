@@ -13,7 +13,6 @@ import random
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date
 from math import sin
 
 from .. import io, preprocessing
@@ -46,7 +45,7 @@ def generate_session_plan(
     Inputs:
         history: Sequence of history entries to seed the pipeline. Defaults to `io.get_study_history`.
         session_parameters: Mapping with `count`, `session_time`, `break_time`, and optionally `shots`.
-        session_date: Optional ISO-formatted date string for new entries (defaults to today).
+        session_date: Optional ISO-formatted date string for new entries (defaults to 1900-01-01).
         shots: Optional override controlling how many sequential plans to generate.
     Outputs:
         list[SessionPlan] ordered by shot execution.
@@ -55,7 +54,7 @@ def generate_session_plan(
     parameters = _resolve_session_parameters(session_parameters)
     shot_count = shots if shots is not None else parameters.get("shots", 1)
     shot_count = max(int(shot_count or 1), 1)
-    run_date = session_date or date.today().isoformat()
+    run_date = session_date or "1900-01-01"
 
     plans: list[SessionPlan] = []
     for _ in range(shot_count):

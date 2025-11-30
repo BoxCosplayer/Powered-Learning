@@ -29,7 +29,7 @@ def temporary_database(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest
     connection.executescript(
         """
         PRAGMA foreign_keys = ON;
-        CREATE TABLE users (uuid TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
+        CREATE TABLE users (id TEXT PRIMARY KEY NOT NULL, username TEXT NOT NULL, role TEXT NOT NULL);
         CREATE TABLE subjects (uuid TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL);
         CREATE TABLE types (uuid TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, weight REAL NOT NULL);
         CREATE TABLE predictedGrades (
@@ -37,7 +37,7 @@ def temporary_database(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest
             userID TEXT NOT NULL,
             subjectID TEXT NOT NULL,
             score REAL NOT NULL,
-            FOREIGN KEY (userID) REFERENCES users (uuid),
+            FOREIGN KEY (userID) REFERENCES users (id),
             FOREIGN KEY (subjectID) REFERENCES subjects (uuid)
         );
         CREATE TABLE history (
@@ -47,14 +47,14 @@ def temporary_database(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest
             typeID TEXT NOT NULL,
             score REAL NOT NULL,
             studied_at DATETIME NOT NULL,
-            FOREIGN KEY (userID) REFERENCES users (uuid),
+            FOREIGN KEY (userID) REFERENCES users (id),
             FOREIGN KEY (subjectID) REFERENCES subjects (uuid),
             FOREIGN KEY (typeID) REFERENCES types (uuid)
         );
         """
     )
 
-    connection.execute("INSERT INTO users (uuid, username, role) VALUES ('fixture-user', 'tester', 'student');")
+    connection.execute("INSERT INTO users (id, username, role) VALUES ('fixture-user', 'tester', 'student');")
 
     type_seeds: Iterable[tuple[str, str, float]] = (
         ("type-revision", "Revision", 0.1),
