@@ -94,7 +94,7 @@ class RunRecommendation implements ShouldQueue
             (string) $this->payload['BREAK_TIME_MINUTES'],
             '-s',
             (string) $this->payload['SHOTS'],
-            '-r',
+            //'-r',
         ];
     }
 

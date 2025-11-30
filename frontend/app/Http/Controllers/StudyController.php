@@ -10,6 +10,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\RunRecommendation;
+use App\Models\HistoryEntry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,44 @@ class StudyController extends Controller
         $state = Cache::get($this->cacheKey($jobId), ['status' => 'pending']);
 
         return response()->json($state);
+    }
+
+    /**
+     * Update the studied_at date for a history entry owned by the authenticated user.
+     *
+     * Inputs: Request carrying either `historyEntryId` or `subject` to target the entry to update.
+     * Outputs: JsonResponse confirming the update or describing the reason it could not be applied.
+     */
+    public function touchHistory(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if ($user === null) {
+            return response()->json(['status' => 'error', 'message' => 'You must be signed in to update history.'], 401);
+        }
+
+        $historyEntryId = (string) $request->input('historyEntryId', '');
+
+        if ($historyEntryId === '') {
+            return response()->json(['status' => 'error', 'message' => 'History entry id is required.'], 400);
+        }
+
+        $historyEntry = HistoryEntry::query()
+            ->where('historyEntryID', $historyEntryId)
+            ->where('userID', $user->getAuthIdentifier())
+            ->first();
+
+        if ($historyEntry === null) {
+            return response()->json(['status' => 'error', 'message' => 'No matching history entry found to update.'], 404);
+        }
+
+        $historyEntry->studied_at = now()->toDateString();
+        $historyEntry->save();
+
+        return response()->json([
+            'status' => 'ok',
+            'historyEntryId' => $historyEntry->historyEntryID,
+            'studied_at' => optional($historyEntry->studied_at)->toDateString(),
+        ]);
     }
 
     /**

@@ -12,8 +12,9 @@ import math
 import random
 from collections import Counter
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import sin
+import uuid
 
 from .. import io, preprocessing
 from ..preprocessing.weighting import HistoryEntry
@@ -27,11 +28,13 @@ class SessionPlan:
         subjects: Shuffled list[str] representing which subject to study per session.
         new_entries: list[dict[str, str | float]] describing synthetic history rows.
         history: list[dict[str, str | float]] representing the base history plus new entries.
+        history_entry_ids: List of history entry UUID strings aligned with `subjects` order.
     """
 
     subjects: list[str]
     new_entries: list[dict[str, str | float]]
     history: list[dict[str, str | float]]
+    history_entry_ids: list[str] = field(default_factory=list)
 
 
 def generate_session_plan(
@@ -123,6 +126,7 @@ def _build_revision_entry(
         "type": "Revision",
         "score": revision_score,
         "date": session_date,
+        "historyEntryID": str(uuid.uuid4()),
     }
 
 
@@ -240,21 +244,11 @@ def _build_not_studied_entries(
                 "type": "Not Studied",
                 "score": penalty_score,
                 "date": session_date,
+                "historyEntryID": str(uuid.uuid4()),
             }
         )
 
     return entries
-
-
-def _shuffle_subjects(subjects: list[str]) -> list[str]:
-    """Return a shuffled copy of the supplied subjects list for output display.
-
-    Inputs: subjects (list[str]): ordered subjects selected during plan generation.
-    Outputs: list[str]: shuffled copy to reduce positional predictability.
-    """
-    shuffled = list(subjects)
-    random.shuffle(shuffled)
-    return shuffled
 
 
 def _persist_history(new_entries: Sequence[dict[str, str | float]]) -> None:
@@ -323,8 +317,14 @@ def _run_single_plan(
     local_history.extend(not_studied_entries)
     persisted_entries = session_entries + not_studied_entries
 
+    session_pairs = list(zip(subjects, session_entries))
+    random.shuffle(session_pairs)
+    shuffled_subjects = [subject for subject, _ in session_pairs]
+    history_entry_ids = [str(entry.get("historyEntryID", "")) for _, entry in session_pairs]
+
     plan = SessionPlan(
-        subjects=_shuffle_subjects(subjects),
+        subjects=shuffled_subjects,
+        history_entry_ids=history_entry_ids,
         new_entries=[dict(entry) for entry in persisted_entries],
         history=[dict(entry) for entry in local_history],
     )

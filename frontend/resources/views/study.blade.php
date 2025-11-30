@@ -8,6 +8,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ config('app.name', 'Powered Learning') }} | Study</title>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=space-grotesk:400,500,600,700" rel="stylesheet" />
@@ -70,13 +71,33 @@
                 <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
                     <div class="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-[#ffb347] opacity-10 blur-3xl"></div>
                     <div class="absolute -left-14 bottom-0 h-40 w-40 rounded-full bg-[#2d8f6f] opacity-10 blur-3xl"></div>
-                    <div class="relative space-y-5">
-                        <div class="space-y-1">
-                            <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Output</p>
-                            <h2 class="text-2xl font-semibold text-slate-900">Recommended schedule</h2>
-                            <p class="text-sm leading-relaxed text-slate-700">Your personalised plan will appear here once the recommender finishes. Feel free to copy the details for your study session.</p>
-                        </div>
+                        <div class="relative space-y-5">
+                            <div class="space-y-1">
+                                <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Output</p>
+                                <h2 class="text-2xl font-semibold text-slate-900">Recommended schedule</h2>
+                                <p class="text-sm leading-relaxed text-slate-700">Your personalised plan will appear here once the recommender finishes. Feel free to copy the details for your study session.</p>
+                            </div>
                         <div class="space-y-4">
+                            <div class="rounded-2xl border border-slate-100 bg-[#2d8f6f]/5 p-4 shadow-inner shadow-[#2d8f6f]/10 ring-1 ring-[#2d8f6f]/20">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="space-y-2">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Current subject</p>
+                                        <h3 id="current-subject" class="text-xl font-semibold text-slate-900">Waiting for plan...</h3>
+                                        <p id="subject-meta" class="text-sm leading-relaxed text-slate-700">Once ready, we will guide you through each subject one by one.</p>
+                                        <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                                            <span id="subject-position" class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">0 / 0</span>
+                                            <span id="subject-shot-label" class="hidden rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">Shot 1</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        id="next-subject"
+                                        class="inline-flex items-center justify-center rounded-xl bg-[#2d8f6f] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-[1px] hover:shadow-md hover:shadow-[#2d8f6f]/30 focus:outline-none focus:ring-2 focus:ring-[#2d8f6f] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+                                        disabled
+                                    >
+                                        Next subject
+                                    </button>
+                                </div>
+                            </div>
                             <div>
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Shots</p>
                                 <div id="plan-list" class="mt-2 grid gap-3 lg:grid-cols-2"></div>
@@ -99,12 +120,22 @@ Waiting for results...
 
         <script>
             const statusUrl = "{{ route('study.status') }}";
+            const touchHistoryUrl = "{{ route('study.history.touch') }}";
             const initialState = @json($state);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const statusChip = document.getElementById('status-chip');
             const statusText = document.getElementById('status-text');
             const resultBlock = document.getElementById('result-block');
             const planList = document.getElementById('plan-list');
             const insightsBlock = document.getElementById('insights-block');
+            const currentSubject = document.getElementById('current-subject');
+            const subjectMeta = document.getElementById('subject-meta');
+            const subjectPosition = document.getElementById('subject-position');
+            const subjectShotLabel = document.getElementById('subject-shot-label');
+            const nextSubjectButton = document.getElementById('next-subject');
+
+            let subjectQueue = [];
+            let currentSubjectIndex = 0;
 
             function renderState(state) {
                 const status = state.status ?? 'pending';
@@ -121,15 +152,28 @@ Waiting for results...
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-[#fee2e2] px-3 py-1 text-sm font-semibold text-[#991b1b] ring-1 ring-[#fca5a5]';
                     statusText.textContent = state.error ?? 'The generator reported a problem.';
                     resultBlock.textContent = state.error ?? 'The generator reported a problem.';
+                    resetSubjectViewer('No subjects available', state.error ?? 'The generator reported a problem.');
                 } else {
                     statusChip.textContent = 'Pending';
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 ring-1 ring-slate-200';
                     statusText.textContent = 'Preparing to run your plan. Please keep this tab open.';
                     resultBlock.textContent = 'Waiting for results...';
+                    resetSubjectViewer();
                 }
             }
 
             function parseRecommenderResult(result) {
+                if (result && typeof result === 'object' && Array.isArray(result.shots)) {
+                    const rawText = typeof result.message === 'string'
+                        ? result.message
+                        : JSON.stringify(result, null, 2);
+                    return {
+                        shots: result.shots,
+                        insights: result.insights ?? {},
+                        rawText,
+                    };
+                }
+
                 let rawText = '';
                 if (typeof result === 'string') {
                     rawText = result;
@@ -151,21 +195,28 @@ Waiting for results...
                 let index = 0;
 
                 while (index < lines.length) {
-                    const match = lines[index].match(/^Study session plan \\(shot\\s*(\\d+)\\):/i);
-                    if (!match) {
+                    const numberedShot = lines[index].match(/^Study session plan \(shot\s*(\d+)\):/i);
+                    const singleShot = numberedShot ? null : lines[index].match(/^Study session plan:/i);
+
+                    if (!numberedShot && !singleShot) {
                         break;
                     }
 
-                    const shotNumber = Number(match[1]) || shots.length + 1;
+                    const shotNumber = numberedShot ? (Number(numberedShot[1]) || shots.length + 1) : shots.length + 1;
                     index += 1;
 
                     const subjects = [];
-                    while (index < lines.length && /^\\d+\\.\\s*/.test(lines[index])) {
-                        subjects.push(lines[index].replace(/^\\d+\\.\\s*/, ''));
+                    while (index < lines.length && /^\d+\.\s*/.test(lines[index])) {
+                        const line = lines[index].replace(/^\d+\.\s*/, '');
+                        const idMatch = line.match(/\(id:\s*([^)]+)\)\s*$/i);
+                        const historyEntryId = idMatch ? idMatch[1].trim() : null;
+                        const subjectName = idMatch ? line.replace(/\(id:\s*([^)]+)\)\s*$/i, '').trim() : line.trim();
+                        subjects.push({ subject: subjectName, historyEntryId });
                         index += 1;
                     }
 
-                    shots.push({ shot: shotNumber, subjects });
+                    const historyEntryIds = subjects.map(item => item.historyEntryId).filter(Boolean);
+                    shots.push({ shot: shotNumber, subjects, historyEntryIds });
 
                     while (index < lines.length && lines[index] === '') {
                         index += 1;
@@ -182,8 +233,8 @@ Waiting for results...
                             continue;
                         }
 
-                        if (/^-\\s+/u.test(line)) {
-                            const trimmed = line.replace(/^-\\s+/, '');
+                        if (/^-\s+/u.test(line)) {
+                            const trimmed = line.replace(/^-\s+/, '');
                             const separatorIndex = trimmed.indexOf(':');
                             if (separatorIndex !== -1) {
                                 const key = trimmed.slice(0, separatorIndex).trim().toLowerCase();
@@ -209,12 +260,126 @@ Waiting for results...
                 return { shots, insights };
             }
 
+            function buildSubjectQueue(shots) {
+                const queue = [];
+                if (!Array.isArray(shots)) {
+                    return queue;
+                }
+
+                const subjectOccurrences = new Map();
+
+                shots.forEach(shot => {
+                    const subjects = Array.isArray(shot.subjects) ? shot.subjects : [];
+                    const historyEntryIds = Array.isArray(shot.historyEntryIds) ? shot.historyEntryIds : [];
+                    subjects.forEach((subject, idx) => {
+                        const subjectText = typeof subject === 'string' ? subject : (subject?.subject ?? '');
+                        const historyEntryId = typeof subject === 'object' && subject !== null
+                            ? subject.historyEntryId ?? historyEntryIds[idx] ?? null
+                            : historyEntryIds[idx] ?? null;
+
+                        const occurrence = (subjectOccurrences.get(subjectText) ?? 0) + 1;
+                        subjectOccurrences.set(subjectText, occurrence);
+
+                        queue.push({
+                            subject: subjectText,
+                            shot: shot.shot ?? queue.length + 1,
+                            indexWithinShot: idx + 1,
+                            historyEntryId,
+                            occurrence,
+                        });
+                    });
+                });
+
+                return queue;
+            }
+
+            function resetSubjectViewer(titleMessage = 'Waiting for plan...', metaMessage = 'Once ready, we will guide you through each subject one by one.') {
+                subjectQueue = [];
+                currentSubjectIndex = 0;
+                currentSubject.textContent = titleMessage;
+                subjectMeta.textContent = metaMessage;
+                subjectPosition.textContent = '0 / 0';
+                subjectShotLabel.classList.add('hidden');
+                nextSubjectButton.textContent = 'Next subject';
+                nextSubjectButton.disabled = true;
+            }
+
+            function updateSubjectViewer() {
+                if (subjectQueue.length === 0) {
+                    resetSubjectViewer();
+                    return;
+                }
+
+                currentSubjectIndex = Math.min(currentSubjectIndex, subjectQueue.length - 1);
+                const current = subjectQueue[currentSubjectIndex];
+
+                currentSubject.textContent = current.subject;
+                subjectMeta.textContent = `Shot ${current.shot} - Item ${current.indexWithinShot}`;
+                subjectPosition.textContent = `${currentSubjectIndex + 1} / ${subjectQueue.length}`;
+                subjectShotLabel.textContent = `Shot ${current.shot}`;
+                subjectShotLabel.classList.remove('hidden');
+
+                if (currentSubjectIndex >= subjectQueue.length - 1) {
+                    nextSubjectButton.textContent = 'Complete Plan';
+                    nextSubjectButton.disabled = false;
+                } else {
+                    nextSubjectButton.textContent = 'Next subject';
+                    nextSubjectButton.disabled = false;
+                }
+            }
+
+            async function touchHistoryEntry(historyEntryId, subjectLabel, occurrence) {
+                if (!csrfToken || !touchHistoryUrl || !historyEntryId) {
+                    return;
+                }
+
+                try {
+                    await fetch(touchHistoryUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: JSON.stringify({
+                            historyEntryId: historyEntryId ?? null,
+                            subject: subjectLabel ?? null,
+                            occurrence: occurrence ?? 1,
+                        }),
+                    });
+                } catch (error) {
+                    console.error('Unable to update history entry date', error);
+                }
+            }
+
+            function goToNextSubject() {
+                const current = subjectQueue[currentSubjectIndex];
+                if (current) {
+                    touchHistoryEntry(current.historyEntryId ?? null, current.subject ?? null, current.occurrence ?? 1);
+                }
+
+                if (currentSubjectIndex < subjectQueue.length - 1) {
+                    currentSubjectIndex += 1;
+                    updateSubjectViewer();
+                }
+            }
+
             function renderPlan(shots, rawText) {
+                if (!planList) {
+                    resultBlock.textContent = rawText || 'Plan container missing in the page.';
+                    return;
+                }
+
                 if (!Array.isArray(shots) || shots.length === 0) {
                     planList.innerHTML = '<p class="text-sm text-slate-700">Unable to parse a plan from the generator. Raw output is shown below.</p>';
                     resultBlock.textContent = rawText || 'No output received.';
+                    resetSubjectViewer('No subjects available', 'The generator did not return a list of subjects.');
                     return;
                 }
+
+                subjectQueue = buildSubjectQueue(shots);
+                currentSubjectIndex = 0;
+                updateSubjectViewer();
 
                 planList.innerHTML = shots.map(shot => {
                     const subjects = (shot.subjects || []).map((subject, idx) => `
@@ -238,6 +403,10 @@ Waiting for results...
             }
 
             function renderInsights(insights) {
+                if (!insightsBlock) {
+                    return;
+                }
+
                 if (!insights || Object.keys(insights).length === 0) {
                     insightsBlock.innerHTML = '<p class="text-sm text-slate-700">No additional insights provided.</p>';
                     return;
@@ -280,6 +449,8 @@ Waiting for results...
                     resultBlock.textContent = String(error);
                 }
             }
+
+            nextSubjectButton.addEventListener('click', goToNextSubject);
 
             renderState(initialState);
             if ((initialState.status ?? 'pending') === 'pending') {

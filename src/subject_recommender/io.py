@@ -7,12 +7,17 @@ as the single database access layer for reads and writes.
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 
 from . import config
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logging.basicConfig(level=logging.INFO)
 
 
 def _get_database_settings() -> tuple[Path, str]:
@@ -258,11 +263,23 @@ def append_history_entries(entries: Sequence[Mapping[str, str | float]]) -> int:
                 continue
             subject_id = subject_ids[subject]
             type_id = type_ids[type_name]
-            history_id = str(uuid.uuid4())
+            history_id = str(entry.get("historyEntryID") or uuid.uuid4())
             rows.append((history_id, user_id, subject_id, type_id, score, date_value))
 
         if not rows:
             return 0
+
+        logger.info(
+            "Appending history entries",
+            extra={
+                "database_path": str(database_path),
+                "user_id": user_id,
+                "row_count": len(rows),
+                "subjects": sorted(subjects),
+                "types": sorted(types),
+                "type_id_map": {name: type_ids[name] for name in types},
+            },
+        )
 
         connection.executemany(
             """
@@ -296,4 +313,14 @@ def delete_history_by_types(type_names: Iterable[str]) -> int:
             parameters,
         )
         connection.commit()
+        logger.info(
+            "Deleted history entries by type",
+            extra={
+                "database_path": str(database_path),
+                "user_id": user_id,
+                "types": list(type_ids.keys()),
+                "type_ids": list(type_ids.values()),
+                "deleted_rows": cursor.rowcount,
+            },
+        )
         return cursor.rowcount

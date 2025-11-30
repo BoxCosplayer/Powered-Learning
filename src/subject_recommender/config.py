@@ -33,7 +33,8 @@ SHOTS = 8
 
 # DATABASE Defaults (overridable via CLI flags when invoking the tool)
 DATABASE_PATH = "Q:\..docs\.Projects\Powered-Learning\\frontend\database\database.sqlite"
-DATABASE_USER_ID = "1"
+# DATABASE_PATH = "Q:\..docs\.Projects\Powered-Learning\data\database.sqlite"
+DATABASE_USER_ID = 1
 
 
 def get_database_settings() -> dict[str, str | Path]:

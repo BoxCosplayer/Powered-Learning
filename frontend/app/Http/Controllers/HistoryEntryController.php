@@ -11,8 +11,10 @@ namespace App\Http\Controllers;
 
 use App\Models\HistoryEntry;
 use App\Models\Subject;
+use App\Models\Type;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -38,11 +40,9 @@ class HistoryEntryController extends Controller
             'type_id' => [
                 'required',
                 'string',
-                Rule::exists('types', 'uuid')->where(function ($query) {
-                    $query->whereRaw('LOWER(type) != ?', ['not studied']);
-                }),
+                Rule::exists('types', 'uuid'),
             ],
-            'score' => ['required', 'numeric', 'min:0', 'max:100'],
+            'score' => ['required', 'numeric', 'min:-1000', 'max:100'],
             'studied_at' => ['required', 'date'],
         ]);
 
@@ -58,6 +58,17 @@ class HistoryEntryController extends Controller
                 'name' => $subjectName,
             ]);
         }
+
+        $typeName = Type::query()->find($validated['type_id'])?->type;
+
+        Log::info('Creating history entry', [
+            'user_id' => $user->id,
+            'subject' => $subjectName,
+            'type_id' => $validated['type_id'],
+            'type' => $typeName,
+            'studied_at' => $validated['studied_at'],
+            'score' => $validated['score'],
+        ]);
 
         HistoryEntry::create([
             'historyEntryID' => (string) Str::uuid(),
@@ -93,11 +104,9 @@ class HistoryEntryController extends Controller
             'type_id' => [
                 'required',
                 'string',
-                Rule::exists('types', 'uuid')->where(function ($query) {
-                    $query->whereRaw('LOWER(type) != ?', ['not studied']);
-                }),
+                Rule::exists('types', 'uuid'),
             ],
-            'score' => ['required', 'numeric', 'min:0', 'max:100'],
+            'score' => ['required', 'numeric', 'min:-1000', 'max:100'],
             'studied_at' => ['required', 'date'],
         ]);
 
@@ -113,6 +122,18 @@ class HistoryEntryController extends Controller
                 'name' => $subjectName,
             ]);
         }
+
+        $typeName = Type::query()->find($validated['type_id'])?->type;
+
+        Log::info('Updating history entry', [
+            'user_id' => $user->id,
+            'history_entry_id' => $historyEntry->historyEntryID,
+            'subject' => $subjectName,
+            'type_id' => $validated['type_id'],
+            'type' => $typeName,
+            'studied_at' => $validated['studied_at'],
+            'score' => $validated['score'],
+        ]);
 
         $historyEntry->update([
             'subjectID' => $subject->uuid,

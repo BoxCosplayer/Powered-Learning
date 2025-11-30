@@ -32,8 +32,18 @@ def _format_plan(plan: SessionPlan, shot_number: int | None = None) -> str:
         header = f"{header} (shot {shot_number})"
 
     lines = [f"{header}:"]
+    history_entry_ids = getattr(plan, "history_entry_ids", []) or []
+    entry_types = {
+        str(entry.get("historyEntryID", "")): str(entry.get("type", "")).strip()
+        for entry in getattr(plan, "new_entries", []) or []
+        if entry.get("historyEntryID")
+    }
     for index, subject in enumerate(plan.subjects, start=1):
-        lines.append(f"{index}. {subject}")
+        history_id = history_entry_ids[index - 1] if index - 1 < len(history_entry_ids) else ""
+        entry_type = entry_types.get(history_id, "")
+        type_suffix = f" [{entry_type}]" if entry_type else ""
+        id_suffix = f" (id: {history_id})" if history_id else ""
+        lines.append(f"{index}. {subject}{type_suffix}{id_suffix}")
     return "\n".join(lines)
 
 
@@ -226,6 +236,6 @@ def main(argv: Sequence[str] | None = None) -> None:
     for index, plan in enumerate(plans, start=1):
         print(_format_plan(plan, shot_number=index if len(plans) > 1 else None))
 
-    print(_format_analysis(plans))
+    # print(_format_analysis(plans))
     if args.reset:
         _reset_history()

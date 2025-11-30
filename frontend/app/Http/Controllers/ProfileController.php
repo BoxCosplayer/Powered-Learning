@@ -46,7 +46,6 @@ class ProfileController extends Controller
             ->get();
 
         $types = Type::query()
-            ->whereRaw('LOWER(type) != ?', ['not studied'])
             ->orderBy('type')
             ->get();
 
