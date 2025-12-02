@@ -47,6 +47,7 @@ def temporary_database(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest
             typeID TEXT NOT NULL,
             score REAL NOT NULL,
             studied_at DATETIME NOT NULL,
+            logged_at DATETIME NOT NULL,
             FOREIGN KEY (userID) REFERENCES users (id),
             FOREIGN KEY (subjectID) REFERENCES subjects (uuid),
             FOREIGN KEY (typeID) REFERENCES types (uuid)
@@ -73,8 +74,8 @@ def temporary_database(monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest
         VALUES ('pred-1','fixture-user','sub-maths',0.5);"""
     )
     connection.execute(
-        "INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at) VALUES "
-        "('hist-1','fixture-user','sub-maths','type-quiz',50,'2025-01-01');"
+        "INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at, logged_at) VALUES "
+        "('hist-1','fixture-user','sub-maths','type-quiz',50,'2025-01-01','2025-01-01T00:00:00');"
     )
     connection.commit()
     connection.close()

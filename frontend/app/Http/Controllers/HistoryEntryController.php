@@ -77,6 +77,7 @@ class HistoryEntryController extends Controller
             'typeID' => $validated['type_id'],
             'score' => $validated['score'],
             'studied_at' => Carbon::parse($validated['studied_at'])->toDateString(),
+            'logged_at' => Carbon::now(),
         ]);
 
         return redirect()
@@ -140,6 +141,7 @@ class HistoryEntryController extends Controller
             'typeID' => $validated['type_id'],
             'score' => $validated['score'],
             'studied_at' => Carbon::parse($validated['studied_at'])->toDateString(),
+            'logged_at' => Carbon::now(),
         ]);
 
         return redirect()

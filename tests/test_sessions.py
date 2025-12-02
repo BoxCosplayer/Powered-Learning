@@ -349,7 +349,8 @@ def test_persist_history_writes_entries(tmp_path: Path) -> None:
             subjectID TEXT NOT NULL,
             typeID TEXT NOT NULL,
             score REAL NOT NULL,
-            studied_at DATETIME NOT NULL
+            studied_at DATETIME NOT NULL,
+            logged_at DATETIME NOT NULL
         );
         """
     )

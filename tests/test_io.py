@@ -7,6 +7,7 @@ Outputs: Dict responses reflecting configuration values or parsed database recor
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,7 @@ def _bootstrap_database(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, user_id
             typeID TEXT NOT NULL,
             score REAL NOT NULL,
             studied_at DATETIME NOT NULL,
+            logged_at DATETIME NOT NULL,
             FOREIGN KEY (userID) REFERENCES users (id),
             FOREIGN KEY (subjectID) REFERENCES subjects (uuid),
             FOREIGN KEY (typeID) REFERENCES types (uuid)
@@ -203,12 +205,14 @@ def test_get_study_history_reads_json_payload(monkeypatch: pytest.MonkeyPatch, t
     connection.execute("INSERT INTO subjects (uuid, name) VALUES ('sub-1', 'Maths');")
     connection.execute("INSERT INTO subjects (uuid, name) VALUES ('sub-2', 'French');")
     connection.execute(
-        "INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at) VALUES (?, ?, ?, ?, ?, ?);",
-        ("hist-1", "user-123", "sub-1", "type-quiz", 65, "2025-03-02"),
+        """INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at, logged_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?);""",
+        ("hist-1", "user-123", "sub-1", "type-quiz", 65, "2025-03-02", "2025-03-02T10:00:00"),
     )
     connection.execute(
-        "INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at) VALUES (?, ?, ?, ?, ?, ?);",
-        ("hist-2", "user-123", "sub-2", "type-exam", 72.5, "2025-03-01"),
+        """INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at, logged_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?);""",
+        ("hist-2", "user-123", "sub-2", "type-exam", 72.5, "2025-03-01", "2025-03-01T09:00:00"),
     )
     connection.commit()
     connection.close()
@@ -218,6 +222,7 @@ def test_get_study_history_reads_json_payload(monkeypatch: pytest.MonkeyPatch, t
     assert history[0]["subject"] == "Maths"
     assert history[0]["type"] == "Quiz"
     assert history[0]["score"] == pytest.approx(65.0)
+    assert history[0]["logged_at"] == "2025-03-02T10:00:00"
     assert history[1]["type"] == "Exam"
 
 
@@ -235,6 +240,34 @@ def test_get_study_history_rejects_non_dict_entries(monkeypatch: pytest.MonkeyPa
     _bootstrap_database(monkeypatch, tmp_path, user_id="user-empty")
 
     assert io.get_study_history() == []
+
+
+def test_append_history_entries_sets_logged_at_default(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Ensure append helper applies a consistent timestamp when none is supplied."""
+
+    fixed_timestamp = datetime(2025, 3, 5, 12, 0, 0)
+
+    class _FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[override]
+            return fixed_timestamp
+
+    db_path = _bootstrap_database(monkeypatch, tmp_path, user_id="fixture-user")
+    connection = sqlite3.connect(db_path)
+    connection.execute("INSERT INTO subjects (uuid, name) VALUES ('sub-maths', 'Maths');")
+    connection.commit()
+    connection.close()
+
+    monkeypatch.setattr(io, "datetime", _FixedDateTime)
+    entries = [{"subject": "Maths", "type": "Quiz", "score": 10, "date": "2025-03-01"}]
+
+    io.append_history_entries(entries)
+
+    connection = sqlite3.connect(db_path)
+    logged_at = connection.execute("SELECT logged_at FROM history WHERE userID = ?;", ("fixture-user",)).fetchone()[0]
+    connection.close()
+
+    assert logged_at == "2025-03-05T12:00:00"
 
 
 def test_get_assessment_weights_falls_back_when_types_missing(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -310,7 +343,8 @@ def test_get_study_history_raises_when_user_missing(monkeypatch: pytest.MonkeyPa
             subjectID TEXT NOT NULL,
             typeID TEXT NOT NULL,
             score REAL NOT NULL,
-            studied_at DATETIME NOT NULL
+            studied_at DATETIME NOT NULL,
+            logged_at DATETIME NOT NULL
         );
         """
     )

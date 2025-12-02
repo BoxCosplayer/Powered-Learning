@@ -99,14 +99,13 @@
                                 </div>
                             </div>
                             <div>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Shots</p>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Shots</p>
+                                    <span id="shot-count" class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">Awaiting plan</span>
+                                </div>
                                 <div id="plan-list" class="mt-2 grid gap-3 lg:grid-cols-2"></div>
                             </div>
-                            <div class="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 shadow-inner shadow-slate-200/50">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Insights</p>
-                                <div id="insights-block" class="mt-3 grid gap-2 text-sm text-slate-800"></div>
-                            </div>
-                            <div>
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Raw output</p>
                                 <pre id="result-block" class="mt-2 max-h-[260px] overflow-auto rounded-2xl bg-slate-900 px-4 py-3 text-xs font-semibold leading-6 text-slate-100 shadow-inner shadow-slate-800/50 ring-1 ring-slate-800/60">
 Waiting for results...
@@ -133,6 +132,7 @@ Waiting for results...
             const subjectPosition = document.getElementById('subject-position');
             const subjectShotLabel = document.getElementById('subject-shot-label');
             const nextSubjectButton = document.getElementById('next-subject');
+            const shotCount = document.getElementById('shot-count');
 
             let subjectQueue = [];
             let currentSubjectIndex = 0;
@@ -147,18 +147,29 @@ Waiting for results...
                     renderPlan(parsed.shots, parsed.rawText);
                     renderInsights(parsed.insights);
                     resultBlock.textContent = parsed.rawText;
+                    if (shotCount) {
+                        shotCount.textContent = parsed.shots?.length ? `${parsed.shots.length} shot${parsed.shots.length === 1 ? '' : 's'}` : 'Plan ready';
+                    }
                 } else if (status === 'error') {
                     statusChip.textContent = 'Error';
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-[#fee2e2] px-3 py-1 text-sm font-semibold text-[#991b1b] ring-1 ring-[#fca5a5]';
                     statusText.textContent = state.error ?? 'The generator reported a problem.';
                     resultBlock.textContent = state.error ?? 'The generator reported a problem.';
                     resetSubjectViewer('No subjects available', state.error ?? 'The generator reported a problem.');
+                    planList.innerHTML = '<p class="text-sm text-slate-700">No schedule could be generated.</p>';
+                    if (shotCount) {
+                        shotCount.textContent = 'Plan unavailable';
+                    }
                 } else {
                     statusChip.textContent = 'Pending';
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 ring-1 ring-slate-200';
                     statusText.textContent = 'Preparing to run your plan. Please keep this tab open.';
                     resultBlock.textContent = 'Waiting for results...';
                     resetSubjectViewer();
+                    planList.innerHTML = '<p class="text-sm text-slate-700">Waiting for the recommender to return a plan.</p>';
+                    if (shotCount) {
+                        shotCount.textContent = 'Awaiting plan';
+                    }
                 }
             }
 
@@ -381,18 +392,22 @@ Waiting for results...
                 currentSubjectIndex = 0;
                 updateSubjectViewer();
 
-                planList.innerHTML = shots.map(shot => {
-                    const subjects = (shot.subjects || []).map((subject, idx) => `
+                planList.innerHTML = shots.map((shot, shotIndex) => {
+                    const shotNumber = shot?.shot ?? shotIndex + 1;
+                    const subjects = (shot.subjects || []).map((subject, idx) => {
+                        const subjectLabel = typeof subject === 'string' ? subject : (subject?.subject ?? '');
+                        return `
                         <li class="flex items-start gap-2">
                             <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">#${idx + 1}</span>
-                            <span class="text-sm font-semibold text-slate-800">${subject}</span>
+                            <span class="text-sm font-semibold text-slate-800">${subjectLabel || 'Unnamed subject'}</span>
                         </li>
-                    `).join('');
+                        `;
+                    }).join('');
 
                     return `
                         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-4 shadow-sm ring-1 ring-slate-100/60">
                             <div class="mb-2 flex items-center justify-between">
-                                <span class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Shot ${shot.shot}</span>
+                                <span class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Shot ${shotNumber}</span>
                             </div>
                             <ol class="space-y-1">${subjects}</ol>
                         </div>

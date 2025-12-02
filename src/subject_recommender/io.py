@@ -11,12 +11,13 @@ import logging
 import sqlite3
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
+from datetime import datetime
 from pathlib import Path
 
 from . import config
 
 logger = logging.getLogger(__name__)
-if not logger.handlers:
+if not logger.handlers:  # pragma: no cover - logger wiring is process-global and exercised elsewhere
     logging.basicConfig(level=logging.INFO)
 
 
@@ -196,7 +197,7 @@ def get_study_history() -> list[dict[str, str | float]]:
 
     Inputs: Database path and user ID derived from `config.get_database_settings()`.
     Outputs: list[dict[str, str | float]] with the canonical history schema
-    (`subject`, `type`, `score`, `date` fields). Returns an empty list when no history exists.
+    (`subject`, `type`, `score`, `date`, `logged_at` fields). Returns an empty list when no history exists.
     """
 
     database_path, user_id = _get_database_settings()
@@ -208,7 +209,8 @@ def get_study_history() -> list[dict[str, str | float]]:
                 subjects.name AS subject,
                 types.type AS type,
                 history.score AS score,
-                history.studied_at AS date
+                history.studied_at AS date,
+                history.logged_at AS logged_at
             FROM history
             INNER JOIN subjects ON subjects.uuid = history.subjectID
             INNER JOIN types ON types.uuid = history.typeID
@@ -224,6 +226,7 @@ def get_study_history() -> list[dict[str, str | float]]:
             "type": str(row["type"]),
             "score": float(row["score"]),
             "date": str(row["date"]),
+            "logged_at": str(row["logged_at"]),
         }
         for row in rows
     ]
@@ -234,7 +237,8 @@ def append_history_entries(entries: Sequence[Mapping[str, str | float]]) -> int:
 
     Inputs:
         entries (Sequence[Mapping[str, str | float]]): Iterable of history entry dictionaries containing
-            `subject`, `type`, `score`, and `date` keys.
+            `subject`, `type`, `score`, `date`, and optional `logged_at` keys. When `logged_at` is
+            omitted, the current timestamp is applied automatically.
     Outputs:
         int: Number of history rows written to the database.
     Raises:
@@ -253,18 +257,20 @@ def append_history_entries(entries: Sequence[Mapping[str, str | float]]) -> int:
         type_ids = _get_type_map(connection, types)
         subject_ids = _get_subject_map(connection, subjects)
 
-        rows: list[tuple[str, str, str, str, float, str]] = []
+        default_logged_at = datetime.now().isoformat(timespec="seconds")
+        rows: list[tuple[str, str, str, str, float, str, str]] = []
         for entry in entries:
             subject = str(entry.get("subject", "")).strip()
             type_name = str(entry.get("type", "")).strip()
             score = float(entry.get("score", 0.0))
             date_value = str(entry.get("date", ""))
+            logged_at_value = str(entry.get("logged_at") or default_logged_at)
             if not subject or not type_name:
                 continue
             subject_id = subject_ids[subject]
             type_id = type_ids[type_name]
             history_id = str(entry.get("historyEntryID") or uuid.uuid4())
-            rows.append((history_id, user_id, subject_id, type_id, score, date_value))
+            rows.append((history_id, user_id, subject_id, type_id, score, date_value, logged_at_value))
 
         if not rows:
             return 0
@@ -283,8 +289,8 @@ def append_history_entries(entries: Sequence[Mapping[str, str | float]]) -> int:
 
         connection.executemany(
             """
-            INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at)
-            VALUES (?, ?, ?, ?, ?, ?);
+            INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at, logged_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
             """,
             rows,
         )

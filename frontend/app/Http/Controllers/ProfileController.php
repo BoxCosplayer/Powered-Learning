@@ -40,6 +40,11 @@ class ProfileController extends Controller
 
         $historyEntries = HistoryEntry::query()
             ->where('userID', $user->id)
+            ->where(static function ($query): void {
+                $query
+                    ->whereNull('studied_at')
+                    ->orWhereYear('studied_at', '!=', 1900);
+            })
             ->with(['subject', 'type'])
             ->orderByDesc('studied_at')
             ->orderByDesc('score')

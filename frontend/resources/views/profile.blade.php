@@ -214,6 +214,7 @@
                                         >
                                             <option value="" disabled {{ old('type_id') === null ? 'selected' : '' }}>Select type</option>
                                             @foreach($types as $type)
+                                                @continue(in_array(strtolower($type->type), ['not studied', 'revision'], true))
                                                 <option value="{{ $type->uuid }}" @selected(old('type_id') === $type->uuid)>{{ $type->type }}</option>
                                             @endforeach
                                         </select>
@@ -310,15 +311,15 @@
                                                     <td class="px-4 py-3 align-middle">
                                                         <select
                                                             form="{{ $updateFormId }}"
-                                                            name="type_id"
-                                                            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
-                                                            required
-                                                        >
-                                                            @foreach($types as $type)
-                                                                <option value="{{ $type->uuid }}" @selected($historyEntry->type?->uuid === $type->uuid)>{{ $type->type }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </td>
+                                                        name="type_id"
+                                                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
+                                                        required
+                                                    >
+                                                        @foreach($types as $type)
+                                                            <option value="{{ $type->uuid }}" @selected($historyEntry->type?->uuid === $type->uuid)>{{ $type->type }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
                                                     <td class="px-4 py-3 align-middle">
                                                         <input
                                                             form="{{ $updateFormId }}"

@@ -10,11 +10,11 @@ from __future__ import annotations
 
 import math
 import random
+import uuid
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from math import sin
-import uuid
 
 from .. import io, preprocessing
 from ..preprocessing.weighting import HistoryEntry
@@ -174,6 +174,18 @@ def _collect_subjects(history: Sequence[HistoryEntry]) -> set[str]:
     return {subject for subject in subjects if subject}
 
 
+def _shuffle_subjects(subjects: Sequence[str]) -> list[str]:
+    """Return a shuffled copy of the provided subject list.
+
+    Inputs: subjects (Sequence[str]): ordered subject identifiers.
+    Outputs: list[str]: shuffled subjects used to reorder plan output.
+    """
+
+    shuffled = list(subjects)
+    random.shuffle(shuffled)
+    return shuffled
+
+
 def _calculate_predicted_grades_from_history(
     history: Sequence[HistoryEntry],
 ) -> dict[str, float]:
@@ -317,10 +329,19 @@ def _run_single_plan(
     local_history.extend(not_studied_entries)
     persisted_entries = session_entries + not_studied_entries
 
-    session_pairs = list(zip(subjects, session_entries))
-    random.shuffle(session_pairs)
-    shuffled_subjects = [subject for subject, _ in session_pairs]
-    history_entry_ids = [str(entry.get("historyEntryID", "")) for _, entry in session_pairs]
+    session_pairs = list(zip(subjects, session_entries, strict=True))
+    shuffled_subjects = _shuffle_subjects(subjects)
+    entry_lookup: dict[str, list[dict[str, str | float]]] = {}
+    for subject, entry in session_pairs:
+        entry_lookup.setdefault(subject, []).append(entry)
+
+    shuffled_pairs: list[tuple[str, dict[str, str | float]]] = []
+    for subject in shuffled_subjects:
+        if not entry_lookup.get(subject):  # pragma: no cover - defensive guard against unexpected empty lookup
+            raise ValueError(f"No session entry found for subject '{subject}'.")
+        shuffled_pairs.append((subject, entry_lookup[subject].pop(0)))
+
+    history_entry_ids = [str(entry.get("historyEntryID", "")) for _, entry in shuffled_pairs]
 
     plan = SessionPlan(
         subjects=shuffled_subjects,

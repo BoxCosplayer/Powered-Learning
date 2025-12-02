@@ -100,8 +100,8 @@ def test_format_analysis_handles_missing_normalised_scores(monkeypatch: pytest.M
     assert "Subject frequency" in summary
 
 
-def test_main_prints_plan_and_analysis(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    """Confirm the CLI entry point prints both the plan and the insights."""
+def test_main_prints_plan_without_analysis(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Confirm the CLI entry point prints only the plan."""
 
     plan = SessionPlan(subjects=["Physics", "Chemistry"], new_entries=[], history=[])
     monkeypatch.setattr(cli, "generate_session_plan", lambda **_: [plan])
@@ -112,8 +112,7 @@ def test_main_prints_plan_and_analysis(monkeypatch: pytest.MonkeyPatch, capsys: 
 
     captured = capsys.readouterr().out.strip()
     assert "Study session plan" in captured
-    assert "Overall session insights" in captured
-    assert "Subject frequency" in captured
+    assert "Overall session insights" not in captured
 
 
 def test_main_handles_multiple_shots(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
@@ -132,7 +131,7 @@ def test_main_handles_multiple_shots(monkeypatch: pytest.MonkeyPatch, capsys: py
     captured = capsys.readouterr().out.strip()
     assert "shot 1" in captured
     assert "shot 2" in captured
-    assert "Overall session insights" in captured
+    assert "Overall session insights" not in captured
 
 
 def test_main_resets_history_when_flagged(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:

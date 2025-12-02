@@ -36,6 +36,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
             $table->double('score');
             $table->dateTime('studied_at');
+            $table->dateTime('logged_at');
         });
     }
 

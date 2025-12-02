@@ -29,10 +29,10 @@ def test_filter_history_removes_revision_and_not_studied() -> None:
 
     connection = sqlite3.connect(config.DATABASE_PATH)
     connection.execute(
-        "INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at) VALUES "
-        "('hist-extra-1', ?, 'sub-maths', 'type-revision', 5, '2025-01-02'),"
-        "('hist-extra-2', ?, 'sub-maths', 'type-not-studied', -2, '2025-01-03'),"
-        "('hist-extra-3', ?, 'sub-maths', 'type-quiz', 70, '2025-01-04');",
+        "INSERT INTO history (historyEntryID, userID, subjectID, typeID, score, studied_at, logged_at) VALUES "
+        "('hist-extra-1', ?, 'sub-maths', 'type-revision', 5, '2025-01-02', '2025-01-02T08:00:00'),"
+        "('hist-extra-2', ?, 'sub-maths', 'type-not-studied', -2, '2025-01-03', '2025-01-03T09:00:00'),"
+        "('hist-extra-3', ?, 'sub-maths', 'type-quiz', 70, '2025-01-04', '2025-01-04T10:00:00');",
         (config.DATABASE_USER_ID, config.DATABASE_USER_ID, config.DATABASE_USER_ID),
     )
     connection.commit()

@@ -221,7 +221,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     """Entry point for the CLI executable.
 
     Inputs: argv (Sequence[str] | None): optional arguments forwarded from the shell.
-    Outputs: Printed study plan text and analysis streamed to standard output.
+    Outputs: Printed study plan text streamed to standard output.
     """
     args = _parse_args(argv)
     config.DATABASE_USER_ID = str(args.user_id)
@@ -236,6 +236,6 @@ def main(argv: Sequence[str] | None = None) -> None:
     for index, plan in enumerate(plans, start=1):
         print(_format_plan(plan, shot_number=index if len(plans) > 1 else None))
 
-    # print(_format_analysis(plans))
+    # Overall analysis intentionally suppressed from CLI output.
     if args.reset:
         _reset_history()
