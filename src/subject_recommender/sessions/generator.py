@@ -118,8 +118,8 @@ def _build_revision_entry(
     Outputs: Dictionary representing the history entry consumed by preprocessing.
     """
     predicted_grades = io.get_predicted_grades()
-    predicted_grade = float(predicted_grades.get(subject, 0.0))
-    x = math.fabs(predicted_grade - 1) * 2 * math.pi
+    predicted_grade = float(predicted_grades.get(subject, 0.0)) / 100
+    x = abs(predicted_grade - 1) * 2 * math.pi
     revision_score = float((sin(x / 4 + math.pi / 2)) * (session_time + break_time))
     return {
         "subject": subject,
@@ -247,7 +247,7 @@ def _build_not_studied_entries(
         if subject in studied_subjects:
             # Already recorded via revision entries for each study session.
             continue
-        predicted_grade = float(predicted_grades.get(subject, 0.0))
+        predicted_grade = float(predicted_grades.get(subject, 0.0)) / 100
         x = (1 - predicted_grade) * math.pi
         penalty_score = float(-sin(x) * (session_time + break_time))
         entries.append(
