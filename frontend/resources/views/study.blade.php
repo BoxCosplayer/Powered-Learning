@@ -1,8 +1,8 @@
-{{--
-    Study view showing queued recommendation status and results.
-    Inputs: $jobId string unique identifier for the queued run; $state array containing the current status, result, or error.
-    Outputs: HTML page that redirects users from the dashboard and polls job progress before displaying the generated study plan.
---}}
+{{-- 
+    Study view housing generation controls, queue viewer, and recommendation output.
+    Inputs: $jobId string|null active job identifier; $state array<string, mixed> current job state; $tunableParameters array<int, array<string, string|int>> field metadata; $queue array<string, mixed> queued history entries.
+    Outputs: HTML page enabling users to run the generator, inspect the pending queue, and review returned plans.
+--}} 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -20,7 +20,7 @@
             <div class="absolute -right-16 bottom-12 h-72 w-72 rounded-full bg-[#ffb347] blur-3xl opacity-25"></div>
             <div class="absolute inset-0 bg-[radial-gradient(circle_at_25%_15%,rgba(45,143,111,0.07),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(255,179,71,0.08),transparent_28%)]"></div>
         </div>
-        <main class="relative mx-auto flex min-h-screen max-w-5xl flex-col gap-10 px-6 py-10">
+        <main class="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-10 px-6 py-10">
             <header class="flex items-center justify-between gap-4 rounded-2xl bg-white/85 px-6 py-4 shadow-lg shadow-slate-200/60 ring-1 ring-slate-100 backdrop-blur">
                 <div>
                     <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Study run</p>
@@ -42,51 +42,80 @@
                 </div>
             </header>
 
-            <section class="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+            <section class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
                 <div class="space-y-6">
                     <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
                         <div class="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-[#2d8f6f] opacity-10 blur-3xl"></div>
                         <div class="absolute -right-10 bottom-0 h-40 w-40 rounded-full bg-[#ffb347] opacity-15 blur-3xl"></div>
-                        <div class="relative space-y-5">
+                        <div class="relative space-y-6">
                             <div class="flex flex-wrap items-center justify-between gap-4">
                                 <div>
-                                    <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Status</p>
-                                    <h2 class="text-2xl font-semibold text-slate-900">Generating your study path</h2>
-                                    <p class="text-sm leading-relaxed text-slate-700">We are running your tuning choices through the recommender. This page will update automatically.</p>
+                                    <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Generation</p>
+                                    <h2 class="text-2xl font-semibold text-slate-900">Tune your study run</h2>
+                                    <p class="text-sm leading-relaxed text-slate-700">Adjust timing and cadence, then generate a personalised queue without leaving this page.</p>
                                 </div>
                                 <div id="status-chip" class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
-                                    Pending
+                                    Idle
                                 </div>
                             </div>
-                            <div class="grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-sm text-slate-800">
-                                <div class="flex items-center justify-between gap-2">
-                                    <span class="font-semibold text-slate-600">Job ID</span>
-                                    <span class="rounded-lg bg-white px-3 py-1 font-mono text-xs font-semibold text-slate-800 ring-1 ring-slate-200">{{ $jobId }}</span>
+                            <form id="generate-form" method="POST" action="{{ route('study.start') }}" class="space-y-5">
+                                @csrf
+                                <div class="grid gap-4 md:grid-cols-2">
+                                    @foreach($tunableParameters as $parameter)
+                                        <label class="flex flex-col gap-1 text-sm font-semibold text-slate-800">
+                                            <span class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-600">
+                                                <span>{{ $parameter['label'] }}</span>
+                                                <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#2d8f6f]">{{ $parameter['key'] }}</span>
+                                            </span>
+                                            <input
+                                                type="{{ $parameter['type'] }}"
+                                                name="{{ $parameter['key'] }}"
+                                                value="{{ old($parameter['key'], $parameter['value']) }}"
+                                                min="1"
+                                                step="1"
+                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
+                                            />
+                                            @error($parameter['key'])
+                                                <span class="text-xs font-normal text-red-700">{{ $message }}</span>
+                                            @else
+                                                <span class="text-xs font-normal text-slate-600">{{ $parameter['helper'] }}</span>
+                                            @enderror
+                                        </label>
+                                    @endforeach
                                 </div>
-                                <p id="status-text" class="text-slate-700">Preparing to run your plan. Please keep this tab open.</p>
-                            </div>
+                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+                                    <div class="space-y-1">
+                                        <p id="status-text" class="text-sm text-slate-700">Press generate to start a personalised study run.</p>
+                                        <p class="text-xs font-semibold text-slate-600">Job ID: <span id="job-id" class="font-mono text-xs">{{ $jobId ?? 'Not started' }}</span></p>
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center gap-2 rounded-xl bg-[#2d8f6f] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2d8f6f]/30 transition hover:-translate-y-[1px] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2d8f6f]"
+                                    >
+                                        Generate
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                </div>
-                <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
-                    <div class="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-[#ffb347] opacity-10 blur-3xl"></div>
-                    <div class="absolute -left-14 bottom-0 h-40 w-40 rounded-full bg-[#2d8f6f] opacity-10 blur-3xl"></div>
+                    <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
+                        <div class="absolute -right-10 -top-16 h-48 w-48 rounded-full bg-[#ffb347] opacity-10 blur-3xl"></div>
+                        <div class="absolute -left-14 bottom-0 h-40 w-40 rounded-full bg-[#2d8f6f] opacity-10 blur-3xl"></div>
                         <div class="relative space-y-5">
                             <div class="space-y-1">
-                                <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Output</p>
-                                <h2 class="text-2xl font-semibold text-slate-900">Recommended schedule</h2>
-                                <p class="text-sm leading-relaxed text-slate-700">Your personalised plan will appear here once the recommender finishes. Feel free to copy the details for your study session.</p>
+                                <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Queue</p>
+                                <h2 class="text-2xl font-semibold text-slate-900">Next queued subject</h2>
+                                <p class="text-sm leading-relaxed text-slate-700">Subjects are ordered by the earliest logged entries with a studied date of 1900. When the queue is empty, generate more.</p>
                             </div>
-                        <div class="space-y-4">
                             <div class="rounded-2xl border border-slate-100 bg-[#2d8f6f]/5 p-4 shadow-inner shadow-[#2d8f6f]/10 ring-1 ring-[#2d8f6f]/20">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div class="space-y-2">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Current subject</p>
-                                        <h3 id="current-subject" class="text-xl font-semibold text-slate-900">Waiting for plan...</h3>
-                                        <p id="subject-meta" class="text-sm leading-relaxed text-slate-700">Once ready, we will guide you through each subject one by one.</p>
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Next up</p>
+                                        <h3 id="current-subject" class="text-xl font-semibold text-slate-900">No queued subjects</h3>
+                                        <p id="subject-meta" class="text-sm leading-relaxed text-slate-700">Generate a plan to queue more study sessions.</p>
                                         <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
                                             <span id="subject-position" class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">0 / 0</span>
-                                            <span id="subject-shot-label" class="hidden rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">Shot 1</span>
+                                            <span id="queue-count" class="rounded-full bg-white px-3 py-1 ring-1 ring-slate-200">0 queued subjects</span>
                                         </div>
                                     </div>
                                     <button
@@ -94,18 +123,34 @@
                                         class="inline-flex items-center justify-center rounded-xl bg-[#2d8f6f] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-[1px] hover:shadow-md hover:shadow-[#2d8f6f]/30 focus:outline-none focus:ring-2 focus:ring-[#2d8f6f] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
                                         disabled
                                     >
-                                        Next subject
+                                        Start subject
                                     </button>
                                 </div>
                             </div>
-                            <div>
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Shots</p>
-                                    <span id="shot-count" class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">Awaiting plan</span>
-                                </div>
-                                <div id="plan-list" class="mt-2 grid gap-3 lg:grid-cols-2"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative overflow-hidden rounded-3xl bg-white/90 p-8 shadow-xl shadow-slate-200/70 ring-1 ring-slate-100 backdrop-blur">
+                    <div class="absolute -left-14 -top-12 h-44 w-44 rounded-full bg-[#2d8f6f] opacity-10 blur-3xl"></div>
+                    <div class="absolute -right-10 bottom-0 h-48 w-48 rounded-full bg-[#ffb347] opacity-10 blur-3xl"></div>
+                    <div class="relative space-y-5">
+                        <div class="space-y-1">
+                            <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Output</p>
+                            <h2 class="text-2xl font-semibold text-slate-900">Recommended schedule</h2>
+                            <p class="text-sm leading-relaxed text-slate-700">Your personalised plan will appear here once the recommender finishes. Feel free to copy the details for your study session.</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
+                                <p class="text-sm text-slate-700">Shots returned</p>
+                                <span id="shot-count" class="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600 ring-1 ring-slate-200">Awaiting plan</span>
                             </div>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Parsed plan</p>
+                                </div>
+                                <div id="plan-list" class="grid gap-3 lg:grid-cols-2"></div>
+                            </div>
+                            <div class="space-y-2">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Raw output</p>
                                 <pre id="result-block" class="mt-2 max-h-[260px] overflow-auto rounded-2xl bg-slate-900 px-4 py-3 text-xs font-semibold leading-6 text-slate-100 shadow-inner shadow-slate-800/50 ring-1 ring-slate-800/60">
 Waiting for results...
@@ -119,57 +164,76 @@ Waiting for results...
 
         <script>
             const statusUrl = "{{ route('study.status') }}";
+            const queueUrl = "{{ route('study.queue') }}";
             const touchHistoryUrl = "{{ route('study.history.touch') }}";
             const initialState = @json($state);
+            const initialQueue = @json($queue);
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const statusChip = document.getElementById('status-chip');
             const statusText = document.getElementById('status-text');
             const resultBlock = document.getElementById('result-block');
             const planList = document.getElementById('plan-list');
-            const insightsBlock = document.getElementById('insights-block');
             const currentSubject = document.getElementById('current-subject');
             const subjectMeta = document.getElementById('subject-meta');
             const subjectPosition = document.getElementById('subject-position');
-            const subjectShotLabel = document.getElementById('subject-shot-label');
             const nextSubjectButton = document.getElementById('next-subject');
             const shotCount = document.getElementById('shot-count');
+            const queueCount = document.getElementById('queue-count');
+            const jobIdBadge = document.getElementById('job-id');
+            const generateForm = document.getElementById('generate-form');
 
-            let subjectQueue = [];
-            let currentSubjectIndex = 0;
+            let subjectQueue = Array.isArray(initialQueue?.entries) ? initialQueue.entries : [];
+            let jobStatus = initialState.status ?? 'idle';
 
             function renderState(state) {
-                const status = state.status ?? 'pending';
+                const status = state.status ?? 'idle';
+                jobStatus = status;
                 if (status === 'done') {
                     statusChip.textContent = 'Complete';
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-[#e7f7ef] px-3 py-1 text-sm font-semibold text-[#2d8f6f] ring-1 ring-[#2d8f6f]/30';
                     statusText.textContent = 'Your personalised plan is ready.';
                     const parsed = parseRecommenderResult(state.result ?? {});
                     renderPlan(parsed.shots, parsed.rawText);
-                    renderInsights(parsed.insights);
                     resultBlock.textContent = parsed.rawText;
                     if (shotCount) {
                         shotCount.textContent = parsed.shots?.length ? `${parsed.shots.length} shot${parsed.shots.length === 1 ? '' : 's'}` : 'Plan ready';
                     }
+                    refreshQueue();
                 } else if (status === 'error') {
                     statusChip.textContent = 'Error';
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-[#fee2e2] px-3 py-1 text-sm font-semibold text-[#991b1b] ring-1 ring-[#fca5a5]';
                     statusText.textContent = state.error ?? 'The generator reported a problem.';
                     resultBlock.textContent = state.error ?? 'The generator reported a problem.';
-                    resetSubjectViewer('No subjects available', state.error ?? 'The generator reported a problem.');
-                    planList.innerHTML = '<p class="text-sm text-slate-700">No schedule could be generated.</p>';
-                    if (shotCount) {
-                        shotCount.textContent = 'Plan unavailable';
-                    }
-                } else {
+                    resetPlanDisplay();
+                } else if (status === 'pending') {
                     statusChip.textContent = 'Pending';
                     statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 ring-1 ring-slate-200';
                     statusText.textContent = 'Preparing to run your plan. Please keep this tab open.';
                     resultBlock.textContent = 'Waiting for results...';
-                    resetSubjectViewer();
-                    planList.innerHTML = '<p class="text-sm text-slate-700">Waiting for the recommender to return a plan.</p>';
-                    if (shotCount) {
-                        shotCount.textContent = 'Awaiting plan';
-                    }
+                    resetPlanDisplay();
+                } else {
+                    statusChip.textContent = 'Idle';
+                    statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 ring-1 ring-slate-200';
+                    statusText.textContent = state.message ?? 'Press generate to start a personalised study run.';
+                    resultBlock.textContent = 'Waiting for results...';
+                    resetPlanDisplay();
+                }
+
+                if (state.jobId && jobIdBadge) {
+                    jobIdBadge.textContent = state.jobId;
+                } else if (jobIdBadge && !state.jobId) {
+                    jobIdBadge.textContent = 'Not started';
+                }
+
+                if (state.queue) {
+                    renderQueue(state.queue);
+                }
+            }
+
+            function resetPlanDisplay() {
+                planList.innerHTML = '<p class="text-sm text-slate-700">Waiting for the recommender to return a plan.</p>';
+                if (shotCount) {
+                    shotCount.textContent = 'Awaiting plan';
                 }
             }
 
@@ -271,110 +335,6 @@ Waiting for results...
                 return { shots, insights };
             }
 
-            function buildSubjectQueue(shots) {
-                const queue = [];
-                if (!Array.isArray(shots)) {
-                    return queue;
-                }
-
-                const subjectOccurrences = new Map();
-
-                shots.forEach(shot => {
-                    const subjects = Array.isArray(shot.subjects) ? shot.subjects : [];
-                    const historyEntryIds = Array.isArray(shot.historyEntryIds) ? shot.historyEntryIds : [];
-                    subjects.forEach((subject, idx) => {
-                        const subjectText = typeof subject === 'string' ? subject : (subject?.subject ?? '');
-                        const historyEntryId = typeof subject === 'object' && subject !== null
-                            ? subject.historyEntryId ?? historyEntryIds[idx] ?? null
-                            : historyEntryIds[idx] ?? null;
-
-                        const occurrence = (subjectOccurrences.get(subjectText) ?? 0) + 1;
-                        subjectOccurrences.set(subjectText, occurrence);
-
-                        queue.push({
-                            subject: subjectText,
-                            shot: shot.shot ?? queue.length + 1,
-                            indexWithinShot: idx + 1,
-                            historyEntryId,
-                            occurrence,
-                        });
-                    });
-                });
-
-                return queue;
-            }
-
-            function resetSubjectViewer(titleMessage = 'Waiting for plan...', metaMessage = 'Once ready, we will guide you through each subject one by one.') {
-                subjectQueue = [];
-                currentSubjectIndex = 0;
-                currentSubject.textContent = titleMessage;
-                subjectMeta.textContent = metaMessage;
-                subjectPosition.textContent = '0 / 0';
-                subjectShotLabel.classList.add('hidden');
-                nextSubjectButton.textContent = 'Next subject';
-                nextSubjectButton.disabled = true;
-            }
-
-            function updateSubjectViewer() {
-                if (subjectQueue.length === 0) {
-                    resetSubjectViewer();
-                    return;
-                }
-
-                currentSubjectIndex = Math.min(currentSubjectIndex, subjectQueue.length - 1);
-                const current = subjectQueue[currentSubjectIndex];
-
-                currentSubject.textContent = current.subject;
-                subjectMeta.textContent = `Shot ${current.shot} - Item ${current.indexWithinShot}`;
-                subjectPosition.textContent = `${currentSubjectIndex + 1} / ${subjectQueue.length}`;
-                subjectShotLabel.textContent = `Shot ${current.shot}`;
-                subjectShotLabel.classList.remove('hidden');
-
-                if (currentSubjectIndex >= subjectQueue.length - 1) {
-                    nextSubjectButton.textContent = 'Complete Plan';
-                    nextSubjectButton.disabled = false;
-                } else {
-                    nextSubjectButton.textContent = 'Next subject';
-                    nextSubjectButton.disabled = false;
-                }
-            }
-
-            async function touchHistoryEntry(historyEntryId, subjectLabel, occurrence) {
-                if (!csrfToken || !touchHistoryUrl || !historyEntryId) {
-                    return;
-                }
-
-                try {
-                    await fetch(touchHistoryUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                        },
-                        body: JSON.stringify({
-                            historyEntryId: historyEntryId ?? null,
-                            subject: subjectLabel ?? null,
-                            occurrence: occurrence ?? 1,
-                        }),
-                    });
-                } catch (error) {
-                    console.error('Unable to update history entry date', error);
-                }
-            }
-
-            function goToNextSubject() {
-                const current = subjectQueue[currentSubjectIndex];
-                if (current) {
-                    touchHistoryEntry(current.historyEntryId ?? null, current.subject ?? null, current.occurrence ?? 1);
-                }
-
-                if (currentSubjectIndex < subjectQueue.length - 1) {
-                    currentSubjectIndex += 1;
-                    updateSubjectViewer();
-                }
-            }
-
             function renderPlan(shots, rawText) {
                 if (!planList) {
                     resultBlock.textContent = rawText || 'Plan container missing in the page.';
@@ -384,13 +344,11 @@ Waiting for results...
                 if (!Array.isArray(shots) || shots.length === 0) {
                     planList.innerHTML = '<p class="text-sm text-slate-700">Unable to parse a plan from the generator. Raw output is shown below.</p>';
                     resultBlock.textContent = rawText || 'No output received.';
-                    resetSubjectViewer('No subjects available', 'The generator did not return a list of subjects.');
+                    if (shotCount) {
+                        shotCount.textContent = 'Plan unavailable';
+                    }
                     return;
                 }
-
-                subjectQueue = buildSubjectQueue(shots);
-                currentSubjectIndex = 0;
-                updateSubjectViewer();
 
                 planList.innerHTML = shots.map((shot, shotIndex) => {
                     const shotNumber = shot?.shot ?? shotIndex + 1;
@@ -417,38 +375,6 @@ Waiting for results...
                 resultBlock.textContent = rawText || 'No output received.';
             }
 
-            function renderInsights(insights) {
-                if (!insightsBlock) {
-                    return;
-                }
-
-                if (!insights || Object.keys(insights).length === 0) {
-                    insightsBlock.innerHTML = '<p class="text-sm text-slate-700">No additional insights provided.</p>';
-                    return;
-                }
-
-                const summaryItems = [];
-                if (insights['shots executed']) {
-                    summaryItems.push(`<div class="flex items-center justify-between"><span class="text-slate-600">Shots executed</span><span class="font-semibold text-slate-900">${insights['shots executed']}</span></div>`);
-                }
-                if (insights['total sessions scheduled']) {
-                    summaryItems.push(`<div class="flex items-center justify-between"><span class="text-slate-600">Total sessions scheduled</span><span class="font-semibold text-slate-900">${insights['total sessions scheduled']}</span></div>`);
-                }
-                if (insights['unique subjects scheduled']) {
-                    summaryItems.push(`<div class="flex items-center justify-between"><span class="text-slate-600">Unique subjects scheduled</span><span class="font-semibold text-slate-900">${insights['unique subjects scheduled']}</span></div>`);
-                }
-
-                const frequency = insights.frequency && typeof insights.frequency === 'object' ? insights.frequency : null;
-                const frequencyHtml = frequency
-                    ? `<div class="flex flex-wrap gap-2 pt-2">${Object.entries(frequency).map(([subject, count]) => `<span class="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-slate-800 ring-1 ring-slate-200">${subject}: ${count}</span>`).join('')}</div>`
-                    : '';
-
-                insightsBlock.innerHTML = `
-                    ${summaryItems.join('') || '<p class="text-sm text-slate-700">No summary metrics provided.</p>'}
-                    ${frequencyHtml}
-                `;
-            }
-
             async function pollStatus() {
                 try {
                     const response = await fetch(statusUrl);
@@ -465,10 +391,111 @@ Waiting for results...
                 }
             }
 
-            nextSubjectButton.addEventListener('click', goToNextSubject);
+            async function refreshQueue() {
+                try {
+                    const response = await fetch(queueUrl);
+                    const data = await response.json();
+                    renderQueue(data);
+                } catch (error) {
+                    console.error('Unable to refresh the queue', error);
+                }
+            }
+
+            async function touchHistoryEntry(historyEntryId, subjectLabel) {
+                if (!csrfToken || !touchHistoryUrl || !historyEntryId) {
+                    return false;
+                }
+
+                try {
+                    const response = await fetch(touchHistoryUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: JSON.stringify({
+                            historyEntryId: historyEntryId ?? null,
+                            subject: subjectLabel ?? null,
+                            occurrence: 1,
+                        }),
+                    });
+
+                    const payload = await response.json();
+                    return payload.status === 'ok';
+                } catch (error) {
+                    console.error('Unable to update history entry date', error);
+                    return false;
+                }
+            }
+
+            async function completeCurrentSubject() {
+                if (!subjectQueue.length) {
+                    triggerGeneration();
+                    return;
+                }
+
+                const current = subjectQueue[0];
+                nextSubjectButton.disabled = true;
+                const previousLabel = nextSubjectButton.textContent;
+                nextSubjectButton.textContent = 'Marking...';
+
+                const updated = await touchHistoryEntry(current.historyEntryId ?? null, current.subject ?? null);
+                if (!updated) {
+                    nextSubjectButton.textContent = previousLabel;
+                    nextSubjectButton.disabled = false;
+                    return;
+                }
+
+                await refreshQueue();
+                nextSubjectButton.textContent = subjectQueue.length > 1 ? 'Next subject' : 'Start subject';
+            }
+
+            function triggerGeneration() {
+                if (!generateForm) {
+                    return;
+                }
+                statusText.textContent = 'Generating your next study plan...';
+                statusChip.textContent = 'Pending';
+                statusChip.className = 'inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 ring-1 ring-slate-200';
+                if (typeof generateForm.requestSubmit === 'function') {
+                    generateForm.requestSubmit();
+                } else {
+                    generateForm.submit();
+                }
+            }
+
+            function renderQueue(queueData) {
+                const entries = Array.isArray(queueData?.entries) ? queueData.entries : [];
+                subjectQueue = entries;
+                const count = queueData?.count ?? entries.length;
+
+                if (queueCount) {
+                    queueCount.textContent = count === 1 ? '1 queued subject' : `${count} queued subjects`;
+                }
+
+                if (!entries.length) {
+                    currentSubject.textContent = 'No queued subjects';
+                    subjectMeta.textContent = 'Generate a plan to queue more study sessions.';
+                    subjectPosition.textContent = '0 / 0';
+                    nextSubjectButton.textContent = jobStatus === 'pending' ? 'Generating...' : 'Generate subjects';
+                    nextSubjectButton.disabled = jobStatus === 'pending';
+                    return;
+                }
+
+                const next = entries[0];
+                currentSubject.textContent = next.subject || 'Queued subject';
+                subjectMeta.textContent = next.logged_at ? `Queued at ${next.logged_at}` : 'Queued subject ready to start.';
+                subjectPosition.textContent = `1 / ${entries.length}`;
+                nextSubjectButton.textContent = entries.length > 1 ? 'Next subject' : 'Complete queue';
+                nextSubjectButton.disabled = false;
+            }
+
+            nextSubjectButton.addEventListener('click', completeCurrentSubject);
 
             renderState(initialState);
-            if ((initialState.status ?? 'pending') === 'pending') {
+            renderQueue(initialQueue);
+            if ((initialState.status ?? 'idle') === 'pending') {
                 pollStatus();
             }
         </script>

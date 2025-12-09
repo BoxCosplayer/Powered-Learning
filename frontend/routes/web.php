@@ -32,6 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/study', [StudyController::class, 'start'])->name('study.start');
     Route::get('/study', [StudyController::class, 'show'])->name('study.show');
     Route::get('/study/status', [StudyController::class, 'status'])->name('study.status');
+    Route::get('/study/queue', [StudyController::class, 'queue'])->name('study.queue');
     Route::post('/study/history/touch', [StudyController::class, 'touchHistory'])->name('study.history.touch');
 
     Route::get('/profile', ProfileController::class)->name('profile');

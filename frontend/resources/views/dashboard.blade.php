@@ -1,8 +1,8 @@
-{{--
-    Dashboard view presenting authenticated user info and a tunable session form.
-    Inputs: $user App\Models\User instance for the authenticated user; $tunableParameters array of parameter metadata for form rendering.
-    Outputs: HTML page with navigation links and a generate form that redirects to the study view.
---}}
+{{-- 
+    Dashboard view presenting authenticated user info and navigation.
+    Inputs: $user App\Models\User instance for the authenticated user.
+    Outputs: HTML page with navigation links and guidance to open the study workspace.
+--}} 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -78,46 +78,28 @@
                         <div class="relative space-y-6">
                             <div class="flex flex-wrap items-center justify-between gap-4">
                                 <div class="space-y-1">
-                                    <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Algorithm inputs</p>
-                                    <h2 class="text-2xl font-semibold text-slate-900">Customise session tuning</h2>
+                                    <p class="text-sm font-semibold uppercase tracking-wide text-[#2d8f6f]">Study workspace</p>
+                                    <h2 class="text-2xl font-semibold text-slate-900">Generate from the study page</h2>
                                     <p class="text-sm leading-relaxed text-slate-700">
-                                        Set the timing and cadence the recommender should follow before you start a personalised run.
+                                        Configure timings and run the personalised recommender directly from the study page. Your queued subjects and next steps live there.
                                     </p>
                                 </div>
-                                <span class="inline-flex items-center rounded-full bg-[#e7f7ef] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Manual entry</span>
+                                <span class="inline-flex items-center rounded-full bg-[#e7f7ef] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#2d8f6f]">Next stop</span>
                             </div>
-                            <form method="POST" action="{{ route('study.start') }}" class="space-y-5">
-                                @csrf
-                                <div class="grid gap-4 md:grid-cols-2">
-                                    @foreach($tunableParameters as $parameter)
-                                        <label class="flex flex-col gap-1 text-sm font-semibold text-slate-800">
-                                            <span class="flex items-center justify-between text-xs uppercase tracking-wide text-slate-600">
-                                                <span>{{ $parameter['label'] }}</span>
-                                                <span class="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[#2d8f6f]">{{ $parameter['key'] }}</span>
-                                            </span>
-                                            <input
-                                                type="{{ $parameter['type'] }}"
-                                                name="{{ $parameter['key'] }}"
-                                                value="{{ $parameter['value'] }}"
-                                                min="1"
-                                                step="1"
-                                                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm transition focus:border-[#2d8f6f] focus:outline-none focus:ring-2 focus:ring-[#2d8f6f]/40"
-                                            />
-                                            <span class="text-xs font-normal text-slate-600">{{ $parameter['helper'] }}</span>
-                                        </label>
-                                    @endforeach
-                                </div>
-                                <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3">
-                                    <p class="text-sm text-slate-700">Press generate to start a personalised study run and move to the study view.</p>
-                                    <button
-                                        type="submit"
+                            <div class="space-y-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                                <p class="text-sm text-slate-700">
+                                    Head to the study view to set session time, breaks, session count, and shots before you generate. You can also step through the queue from there.
+                                </p>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <a
+                                        href="{{ route('study.show') }}"
                                         class="inline-flex items-center gap-2 rounded-xl bg-[#2d8f6f] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#2d8f6f]/30 transition hover:-translate-y-[1px] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2d8f6f]"
                                     >
-                                        Generate
-                                        <span aria-hidden="true" class="text-lg leading-none">→</span>
-                                    </button>
+                                        Open study page
+                                    </a>
+                                    <span class="text-sm font-semibold text-slate-700">Queue controls and generator now live on study</span>
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     </div>
                 </div>
